@@ -1,0 +1,545 @@
+/* Main CSS for AI Command Bar - Cursor Style */
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.ai-command-bar {
+    padding: 16px 20px;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* Header Section */
+.header-section {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.super-title {
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: #888;
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.main-title {
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--vscode-foreground);
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+/* Nouvelle barre de commande compacte style Cursor */
+.command-input-container {
+    margin-top: auto;
+    margin-bottom: 0;
+}
+
+.command-input-wrapper {
+    position: relative;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 6px 10px 8px 10px;
+    transition: all 0.2s ease;
+}
+
+.command-input-wrapper:focus-within {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Bouton @ pour les fichiers */
+.file-attach-button {
+    position: relative;
+    margin-bottom: 6px;
+}
+
+.attach-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    color: var(--vscode-foreground);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.attach-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Autocomplétion des fichiers */
+.file-autocomplete {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--vscode-dropdown-background);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    margin-top: 2px;
+}
+
+.file-autocomplete input {
+    width: 100%;
+    padding: 6px 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--vscode-foreground);
+    font-size: 11px;
+}
+
+.file-autocomplete input:focus {
+    outline: none;
+}
+
+.file-results {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.file-result-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.file-result-item:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.file-result-item:last-child {
+    border-bottom: none;
+}
+
+/* Zone de texte auto-expansive */
+.text-input-wrapper {
+    margin-bottom: 6px;
+}
+
+.text-input-wrapper textarea {
+    width: 100%;
+    min-height: 32px;
+    max-height: 150px;
+    padding: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    background: transparent;
+    border: none;
+    color: var(--vscode-foreground);
+    resize: none;
+    font-family: var(--vscode-editor-font-family);
+    transition: all 0.2s ease;
+}
+
+.text-input-wrapper textarea:focus {
+    outline: none;
+}
+
+.text-input-wrapper textarea::placeholder {
+    color: #666;
+    font-size: 12px;
+}
+
+/* Actions en bas */
+.input-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.action-btn {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 3px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    color: var(--vscode-foreground);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.send-btn {
+    background: #5B7FED;
+    color: white;
+}
+
+.send-btn:hover {
+    background: #6B8FFF;
+    color: white;
+}
+
+/* Options compactes */
+.compact-options {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.option-group {
+    flex: 1;
+}
+
+.compact-select {
+    width: 100%;
+    padding: 6px 8px;
+    font-size: 11px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='8' height='4' viewBox='0 0 8 4' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 3L7 1' stroke='%23999' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 20px;
+}
+
+.compact-select:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.compact-select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Provider buttons compact */
+.provider-buttons.compact {
+    margin-bottom: 0;
+    gap: 4px;
+}
+
+.provider-buttons.compact .provider-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 4px;
+}
+
+/* Task and Mode Sections */
+.task-section,
+.mode-section {
+    margin-bottom: 20px;
+}
+
+.section-label {
+    display: block;
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 8px;
+    font-weight: 400;
+}
+
+.dropdown-full {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23999' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 20px center;
+    padding-right: 50px;
+    transition: all 0.2s ease;
+}
+
+.dropdown-full:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-full:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Provider Buttons */
+.provider-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.provider-btn {
+    flex: 1;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 500;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--vscode-foreground);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.provider-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.provider-btn.active {
+    background: #5B7FED;
+    border-color: #5B7FED;
+    color: white;
+}
+
+.provider-btn.active:hover {
+    background: #6B8FFF;
+    border-color: #6B8FFF;
+}
+
+/* Zone de conversation WhatsApp */
+.conversation-container {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    border: none;
+    background: transparent;
+    max-height: 400px;
+}
+
+.conversation-content {
+    padding: 12px;
+    min-height: 100px;
+}
+
+.message {
+    margin-bottom: 16px;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.message.user {
+    background: rgba(91, 127, 237, 0.1);
+    border: 1px solid rgba(91, 127, 237, 0.2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-left: 20px;
+}
+
+.message.ai {
+    padding: 8px 12px;
+    line-height: 1.4;
+}
+
+.message-content {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vscode-foreground);
+}
+
+.message-meta {
+    font-size: 9px;
+    color: #888;
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Coach Advice avec collapse - COLLÉ À LA ZONE DE SAISIE */
+.coaching-section {
+    margin-bottom: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.coaching-header {
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+    font-size: 8px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.1px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 16px;
+}
+
+.collapse-btn {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.collapse-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--vscode-foreground);
+}
+
+.coaching-section.collapsed .coaching-content {
+    display: none;
+}
+
+.coaching-section.collapsed .collapse-btn svg {
+    transform: rotate(-90deg);
+}
+
+.coaching-content {
+    padding: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--vscode-foreground);
+}
+
+/* Metrics Section - PLACÉES SOUS LA ZONE DE SAISIE */
+.command-input-container .metrics-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    margin-top: 8px;
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.metric-label {
+    font-size: 9px;
+    color: #888;
+}
+
+.metric-value {
+    font-size: 9px;
+    font-weight: 500;
+    color: var(--vscode-foreground);
+}
+
+/* Response Section */
+.response-section,
+.test-results-section,
+.coaching-section {
+    margin-top: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.response-header,
+.test-results-header,
+.coaching-header {
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+    font-size: 10px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.response-content,
+.test-results-content,
+.coaching-content {
+    padding: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--vscode-foreground);
+}
+
+.test-result-item {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.test-result-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.test-result-item strong {
+    color: #888;
+    display: inline-block;
+    min-width: 100px;
+    font-weight: 500;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Select dropdown styling */
+select {
+    color: var(--vscode-foreground);
+}
+
+select option {
+    background: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+}

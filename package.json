@@ -1,0 +1,160 @@
+{
+  "name": "ai-developer-analytics",
+  "displayName": "AI Developer Analytics",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching",
+  "version": "0.1.3",
+  "license": "AGPL-3.0-only",
+  "icon": "media/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/ai-developer-analytics"
+  },
+  "engines": {
+    "vscode": "^1.89.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ai-analytics",
+          "title": "AI Analytics",
+          "icon": "$(graph)"
+        }
+      ]
+    },
+    "views": {
+      "ai-analytics": [
+        {
+          "id": "ai-command-bar",
+          "name": "AI Command Bar",
+          "type": "webview"
+        },
+        {
+          "id": "ai-dashboard",
+          "name": "AI Dashboard",
+          "type": "webview"
+        },
+        {
+          "id": "ai-coach",
+          "name": "AI Coach",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "ai-analytics.openCommandBar",
+        "title": "Open AI Command Bar",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.openDashboard",
+        "title": "Open AI Dashboard",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.openCoach",
+        "title": "Open AI Coach",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.toggleHotReload",
+        "title": "Toggle Hot Reload",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.testDeepSeek",
+        "title": "Test DeepSeek API",
+        "category": "AI Analytics"
+      }
+    ],
+    "configuration": {
+      "title": "AI Developer Analytics",
+      "properties": {
+        "aiAnalytics.ollamaEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Ollama local AI support"
+        },
+        "aiAnalytics.ollamaUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Ollama API URL"
+        },
+        "aiAnalytics.defaultOllamaModel": {
+          "type": "string",
+          "default": "phi-4",
+          "description": "Default Ollama model"
+        },
+        "aiAnalytics.routingMode": {
+          "type": "string",
+          "default": "auto-local",
+          "enum": [
+            "direct",
+            "auto-local",
+            "auto-ollama",
+            "auto-gpt5",
+            "auto-claude",
+            "auto-deepseek"
+          ],
+          "description": "AI routing mode"
+        },
+        "aiAnalytics.telemetryEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable local telemetry collection"
+        },
+        "aiAnalytics.hotReloadEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable hot reload for UI and backend"
+        },
+        "aiAnalytics.deepseekApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DeepSeek API key for AI requests"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "@types/crypto-js": "^4.2.2",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.89.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/ui": "^2.0.0",
+    "@vscode/test-electron": "^2.3.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.25.0",
+    "axios": "^1.12.2",
+    "crypto-js": "^4.2.0",
+    "lru-cache": "^10.0.0",
+    "openai": "^4.0.0",
+    "sqlite3": "^5.1.0"
+  }
+}
