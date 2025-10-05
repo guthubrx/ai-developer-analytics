@@ -1,5 +1,6 @@
 {
   "name": "ai-developer-analytics",
+  "type": "module",
   "displayName": "AI Developer Analytics",
   "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching",
   "version": "0.1.3",
@@ -124,9 +125,13 @@
       }
     }
   },
+  "workspaces": [
+    ".",
+    "server-mcp"
+  ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && npm run build:mcp",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
@@ -134,7 +139,9 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "package": "vsce package",
-    "publish": "vsce publish"
+    "publish": "vsce publish",
+    "build:mcp": "cd server-mcp && npm run build",
+    "test:mcp": "cd server-mcp && npm test"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
