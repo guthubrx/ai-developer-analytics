@@ -2,10 +2,11 @@
 
 ## 📋 Vue d'ensemble
 
-Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le routage multi-niveaux, Ollama local et coaching adaptatif.
+Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le routage multi-niveaux, Ollama local, coaching adaptatif et serveur MCP local.
 
 **Statut actuel:** ✅ Architecture de base complète
 **Prochaine étape:** 🚀 Test dans VS Code
+**Nouvelle fonctionnalité:** 🧭 Serveur MCP local (planifié)
 
 ## 🎯 Objectifs du Projet
 
@@ -18,11 +19,19 @@ Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le
 - [ ] **Tests complets** - Extension dans VS Code
 - [ ] **UI Dashboard** - Composants d'interface utilisateur
 - [ ] **Scanner architecture** - Analyse automatique du code
+- [ ] **Serveur MCP local** - Outils filesystem et web search sécurisés
 
 ## 📁 Structure du Projet
 
 ```
 ai-developer-analytics-next-gen/
+├── server-mcp/                    # Serveur MCP local (NOUVEAU)
+│   ├── src/
+│   │   ├── index.ts              # Serveur MCP principal
+│   │   ├── tools/                # Outils fs et web
+│   │   ├── security/             # Validation scope et permissions
+│   │   └── schema/               # Schémas E/S
+│   └── dist/                     # Build output
 ├── src/
 │   ├── extension.ts              # Point d'entrée principal
 │   ├── ai/
@@ -31,8 +40,10 @@ ai-developer-analytics-next-gen/
 │   ├── analytics/
 │   │   ├── manager.ts            # Gestionnaire SQLite
 │   │   └── models.ts             # Modèles de données
-│   └── ui/
-│       └── webviews/             # Composants WebView
+│   ├── ui/
+│   │   └── webviews/             # Composants WebView
+│   ├── mcpClient.ts              # Client MCP (NOUVEAU)
+│   └── policies/                 # Gestion permissions (NOUVEAU)
 ├── package.json                  # Configuration extension
 ├── tsconfig.json                 # Configuration TypeScript
 ├── test-deepseek-simple.js       # Test manuel DeepSeek
@@ -69,6 +80,11 @@ ai-developer-analytics-next-gen/
 - [x] Fichier de test manuel DeepSeek (`test-deepseek-simple.js`)
 - [x] Tests sans compilation TypeScript
 
+### 🧭 Architecture MCP (Planifiée)
+- [ ] **Serveur MCP** - Structure de base et outils core
+- [ ] **Sécurité MCP** - Workspace Trust et permissions
+- [ ] **Intégration** - Client et policies dans l'extension
+
 ## 🚀 Prochaines Étapes
 
 ### Phase 1: Test Extension (Immédiat)
@@ -93,7 +109,14 @@ ai-developer-analytics-next-gen/
 - [ ] Panneau de coaching adaptatif
 - [ ] Visualisation des métriques
 
-### Phase 3: Fonctionnalités Avancées
+### Phase 3: Serveur MCP Local
+- [ ] **Configuration monorepo** - Workspaces et dépendances
+- [ ] **Serveur MCP core** - Outils fs et web search
+- [ ] **Intégration extension** - Client et policies
+- [ ] **Tests sécurité** - Validation scope et conformité
+- [ ] **Packaging** - Validation inclusion dist/ uniquement
+
+### Phase 4: Fonctionnalités Avancées
 - [ ] Scanner d'architecture automatique
 - [ ] Recommandations de refactoring
 - [ ] Intégration CI/CD
@@ -119,12 +142,25 @@ npm run test:watch    # Mode surveillance
 npm run e2e           # Tests Playwright
 ```
 
+### Tests MCP (Nouveaux)
+```bash
+npm run test:mcp      # Tests serveur MCP (Vitest)
+# Tests manuels MCP :
+# - Workspace non fiable → MCP désactivé
+# - Consentement → Prompt affiché
+# - Scope validation → Erreur OUT_OF_SCOPE
+# - Web search → Résultats normalisés
+```
+
 ## 📊 Métriques de Suivi
 
 - **Latence IA:** Temps de réponse des providers
 - **Coûts:** Estimation des coûts par requête
 - **Utilisation:** Fréquence et types de requêtes
 - **Performance:** Métriques de routage intelligent
+- **Performance MCP:** Latence outils fs et web
+- **Sécurité MCP:** Taux de refus OUT_OF_SCOPE
+- **Utilisation MCP:** Fréquence outils par type
 
 ## 🔧 Développement
 
@@ -135,6 +171,9 @@ npm run watch         # Surveillance des changements
 npm run lint          # Vérification ESLint
 npm run package       # Création package .vsix
 npm run publish       # Publication (si configuré)
+# Nouvelles commandes MCP :
+npm run build:mcp     # Build serveur MCP
+npm run test:mcp      # Tests serveur MCP
 ```
 
 ### Configuration
@@ -142,6 +181,9 @@ npm run publish       # Publication (si configuré)
 - **Ollama:** URL et modèle par défaut configurables
 - **Télémétrie:** Activation/désactivation locale
 - **Hot Reload:** Pour développement
+- **MCP:** `aiAnalytics.mcpEnabled` - Activation serveur MCP
+- **Scope MCP:** `aiAnalytics.mcpScopeToWorkspace` - Restriction workspace
+- **Dossiers MCP:** `aiAnalytics.mcpAdditionalDirectories` - Dossiers supplémentaires
 
 ## 🎯 Points Clés Réalisés
 
@@ -151,9 +193,14 @@ npm run publish       # Publication (si configuré)
 4. **✅ Analytics privés** - Stockage local chiffré
 5. **✅ Tests manuels** - Validation sans VS Code
 6. **🔄 Prêt pour VS Code** - Compilation et packaging restants
+7. **🧭 Serveur MCP planifié** - Architecture définie et prête pour implémentation
 
 ## 📞 Prochaines Actions
 
-L'extension est prête pour la phase de test dans VS Code. Les composants principaux sont fonctionnels et peuvent être compilés pour installation.
+L'extension est prête pour la phase de test dans VS Code. Les composants principaux sont fonctionnels et peuvent être compilés pour installation. Le serveur MCP local est planifié et prêt pour implémentation après validation de l'extension de base.
 
-**Action recommandée:** Compiler et tester l'extension dans VS Code pour valider l'intégration complète.
+**Actions recommandées:**
+1. **Immédiat:** Compiler et tester l'extension dans VS Code
+2. **Court terme:** Implémenter l'interface utilisateur (Phase 2)
+3. **Moyen terme:** Développer le serveur MCP local (Phase 3)
+4. **Long terme:** Fonctionnalités avancées et documentation (Phase 4)
