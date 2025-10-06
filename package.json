@@ -74,6 +74,26 @@
         "command": "ai-analytics.testDeepSeek",
         "title": "Test DeepSeek API",
         "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.startMCPServer",
+        "title": "Start MCP Server",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.stopMCPServer",
+        "title": "Stop MCP Server",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.restartMCPServer",
+        "title": "Restart MCP Server",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.showMCPServerStatus",
+        "title": "Show MCP Server Status",
+        "category": "AI Analytics"
       }
     ],
     "configuration": {

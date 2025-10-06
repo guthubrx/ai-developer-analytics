@@ -15,11 +15,15 @@ import { AICommandBarProvider } from './ui/sidebar/command-bar-provider';
 import { AIDashboardProvider } from './ui/dashboards/dashboard-provider';
 import { AICoachProvider } from './ui/dashboards/coach-provider';
 import { registerDeepSeekTestCommand } from './test/deepseek-manual-test';
+import { MCPManager } from './mcp/mcp-manager';
 
 /**
  * Extension activation function
  * Fonction d'activation de l'extension
  */
+// Global reference to MCP manager for deactivation
+let mcpManager: MCPManager | null = null;
+
 export async function activate(context: vscode.ExtensionContext) {
     console.log('AI Developer Analytics extension is now active!');
 
@@ -30,6 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const aiRouter = new AIRouter(aiClientManager, analyticsManager);
     const aiCoach = new AICoach(analyticsManager, aiRouter);
     const hotReloadManager = new HotReloadManager(context);
+    mcpManager = new MCPManager(context);
 
     // Register webview providers
     // Enregistrer les fournisseurs de webview
@@ -85,6 +90,48 @@ export async function activate(context: vscode.ExtensionContext) {
         }),
         vscode.commands.registerCommand('ai-analytics.showTestResults', (results: any) => {
             commandBarProvider.showTestResults(results);
+        }),
+        vscode.commands.registerCommand('ai-analytics.startMCPServer', async () => {
+            if (!mcpManager) {
+                vscode.window.showErrorMessage('MCP Manager not initialized');
+                return;
+            }
+            const success = await mcpManager.startServer();
+            if (success) {
+                vscode.window.showInformationMessage('MCP Server started successfully');
+            } else {
+                vscode.window.showErrorMessage('Failed to start MCP Server');
+            }
+        }),
+        vscode.commands.registerCommand('ai-analytics.stopMCPServer', async () => {
+            if (!mcpManager) {
+                vscode.window.showErrorMessage('MCP Manager not initialized');
+                return;
+            }
+            await mcpManager.stopServer();
+            vscode.window.showInformationMessage('MCP Server stopped');
+        }),
+        vscode.commands.registerCommand('ai-analytics.restartMCPServer', async () => {
+            if (!mcpManager) {
+                vscode.window.showErrorMessage('MCP Manager not initialized');
+                return;
+            }
+            const success = await mcpManager.restartServer();
+            if (success) {
+                vscode.window.showInformationMessage('MCP Server restarted successfully');
+            } else {
+                vscode.window.showErrorMessage('Failed to restart MCP Server');
+            }
+        }),
+        vscode.commands.registerCommand('ai-analytics.showMCPServerStatus', () => {
+            if (!mcpManager) {
+                vscode.window.showErrorMessage('MCP Manager not initialized');
+                return;
+            }
+            const status = mcpManager.getServerStatus();
+            vscode.window.showInformationMessage(
+                `MCP Server Status: ${status.isRunning ? 'Running' : 'Stopped'}${status.pid ? ` (PID: ${status.pid})` : ''}`
+            );
         })
     );
 
@@ -110,6 +157,13 @@ export async function activate(context: vscode.ExtensionContext) {
  * Extension deactivation function
  * Fonction de désactivation de l'extension
  */
-export function deactivate() {
+export async function deactivate() {
     console.log('AI Developer Analytics extension is now deactivated');
+
+    // Stop MCP server if running
+    // Arrêter le serveur MCP s'il est en cours d'exécution
+    if (mcpManager) {
+        await mcpManager.dispose();
+        mcpManager = null;
+    }
 }
