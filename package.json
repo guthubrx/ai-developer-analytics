@@ -3,7 +3,7 @@
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
   "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching",
-  "version": "0.2.5",
+  "version": "0.2.7",
   "license": "AGPL-3.0-only",
   "icon": "media/icon.png",
   "repository": {
@@ -244,6 +244,17 @@
           "type": "boolean",
           "default": true,
           "description": "Enable real-time streaming responses"
+        }
+      ,
+        "aiAnalytics.moonshotApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Moonshot (Kimi) API key"
+        },
+        "aiAnalytics.moonshotDefaultModel": {
+          "type": "string",
+          "default": "moonshot-v1-8k",
+          "description": "Default Moonshot model (free text, suggestions available)"
         }
       }
     }

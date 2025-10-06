@@ -11,6 +11,7 @@ import { OpenAIClient } from './openai-client';
 import { AnthropicClient } from './anthropic-client';
 import { DeepSeekClient } from './deepseek-client';
 import { OllamaClient } from './ollama-client';
+import { MoonshotClient } from './moonshot-client';
 
 /**
  * Manages all AI clients
@@ -21,12 +22,14 @@ export class AIClientManager {
     public readonly anthropicClient: AnthropicClient;
     public readonly deepseekClient: DeepSeekClient;
     public readonly ollamaClient: OllamaClient;
+    public readonly moonshotClient: MoonshotClient;
 
     constructor(context: vscode.ExtensionContext) {
         this.openAIClient = new OpenAIClient(context);
         this.anthropicClient = new AnthropicClient(context);
         this.deepseekClient = new DeepSeekClient(context);
         this.ollamaClient = new OllamaClient(context);
+        this.moonshotClient = new MoonshotClient(context);
     }
 
     /**
@@ -38,7 +41,8 @@ export class AIClientManager {
             this.openAIClient.initialize(),
             this.anthropicClient.initialize(),
             this.deepseekClient.initialize(),
-            this.ollamaClient.initialize()
+            this.ollamaClient.initialize(),
+            this.moonshotClient.initialize()
         ]);
     }
 
@@ -63,6 +67,10 @@ export class AIClientManager {
 
         if (await this.ollamaClient.isAvailable()) {
             clients.push(this.ollamaClient);
+        }
+
+        if (await this.moonshotClient.isAvailable()) {
+            clients.push(this.moonshotClient);
         }
 
         return clients;

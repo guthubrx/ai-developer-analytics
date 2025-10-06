@@ -9,7 +9,7 @@
  * AI Provider types
  * Types de fournisseurs IA
  */
-export type AIProvider = 'openai' | 'anthropic' | 'deepseek' | 'ollama';
+export type AIProvider = 'openai' | 'anthropic' | 'deepseek' | 'ollama' | 'moonshot';
 
 /**
  * AI Routing modes

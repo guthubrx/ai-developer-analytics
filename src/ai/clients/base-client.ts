@@ -120,7 +120,8 @@ export abstract class BaseAIClient implements AIClient {
             openai: { input: 0.01, output: 0.03 }, // GPT-4 approximate
             anthropic: { input: 0.015, output: 0.075 }, // Claude 3 approximate
             deepseek: { input: 0.00014, output: 0.00028 }, // DeepSeek Chat
-            ollama: { input: 0, output: 0 } // Local, no cost
+            ollama: { input: 0, output: 0 }, // Local, no cost
+            moonshot: { input: 0.01, output: 0.03 } // Moonshot approximate
         };
 
         const cost = costs[provider];

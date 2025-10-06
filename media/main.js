@@ -4,21 +4,10 @@
 (function() {
     const vscode = acquireVsCodeApi();
 
-    // DOM Elements
-    const promptInput = document.getElementById('prompt-input');
-    const sendBtn = document.getElementById('send-btn');
-    const fileAttachBtn = document.getElementById('file-attach-btn');
-    const imageAttachBtn = document.getElementById('image-attach-btn');
-    const fileAutocomplete = document.getElementById('file-autocomplete');
-    const fileSearch = document.getElementById('file-search');
-    const fileResults = document.getElementById('file-results');
-    const conversationContent = document.getElementById('conversation-content');
-    const conversationContainer = document.getElementById('conversation-container');
-    const coachingSection = document.getElementById('coaching-section');
-    const coachingContent = document.getElementById('coaching-content');
-    const coachCollapseBtn = document.getElementById('coach-collapse-btn');
-    const sessionTabs = document.getElementById('session-tabs');
-    const newSessionBtn = document.getElementById('new-session-btn');
+    // DOM Elements (will be initialized after DOM is loaded)
+    let promptInput, sendBtn, fileAttachBtn, imageAttachBtn, fileAutocomplete, fileSearch, fileResults;
+    let conversationContent, conversationContainer, coachingSection, coachingContent, coachCollapseBtn;
+    let sessionTabs, newSessionBtn;
 
     // State
     let attachedFiles = [];
@@ -47,11 +36,37 @@
 
     // Initialize
     document.addEventListener('DOMContentLoaded', () => {
+        initializeDOMElements();
         initializeEventListeners();
         initializeAutoExpandTextarea();
         loadSettings();
         loadMetricsFromStorage();
     });
+
+    function initializeDOMElements() {
+        console.log('Initializing DOM elements...');
+
+        promptInput = document.getElementById('prompt-input');
+        sendBtn = document.getElementById('send-btn');
+        fileAttachBtn = document.getElementById('file-attach-btn');
+        imageAttachBtn = document.getElementById('image-attach-btn');
+        fileAutocomplete = document.getElementById('file-autocomplete');
+        fileSearch = document.getElementById('file-search');
+        fileResults = document.getElementById('file-results');
+        conversationContent = document.getElementById('conversation-content');
+        conversationContainer = document.getElementById('conversation-container');
+        coachingSection = document.getElementById('coaching-section');
+        coachingContent = document.getElementById('coaching-content');
+        coachCollapseBtn = document.getElementById('coach-collapse-btn');
+        sessionTabs = document.getElementById('session-tabs');
+        newSessionBtn = document.getElementById('new-session-btn');
+
+        console.log('DOM elements initialized:');
+        console.log('- fileAutocomplete:', fileAutocomplete);
+        console.log('- fileSearch:', fileSearch);
+        console.log('- fileResults:', fileResults);
+        console.log('- fileAttachBtn:', fileAttachBtn);
+    }
 
     function initializeEventListeners() {
         // Send button
@@ -66,13 +81,28 @@
             // Shift+Enter allows new line (default behavior)
         });
 
+        // Escape key to close file autocomplete
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isFileAutocompleteOpen) {
+                e.preventDefault();
+                closeFileAutocomplete();
+            }
+        });
+
         // Detect @ character to show file autocomplete
         promptInput.addEventListener('input', (e) => {
             const value = e.target.value;
             const lastChar = value.slice(-1);
 
+            console.log('Input detected, last char:', lastChar, 'autocomplete open:', isFileAutocompleteOpen);
+
             if (lastChar === '@' && !isFileAutocompleteOpen) {
+                console.log('@ character detected, opening file autocomplete');
                 openFileAutocomplete();
+            } else if (lastChar !== '@' && isFileAutocompleteOpen) {
+                // Close autocomplete when typing anything other than @
+                console.log('Non-@ character detected, closing file autocomplete');
+                closeFileAutocomplete();
             }
         });
 
@@ -85,15 +115,47 @@
         // File search input
         fileSearch.addEventListener('input', handleFileSearch);
 
+        // Escape key in file search to close autocomplete
+        fileSearch.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                closeFileAutocomplete();
+            }
+        });
+
         // Close file autocomplete when clicking outside
         document.addEventListener('click', (e) => {
-            if (!fileAutocomplete.contains(e.target) && e.target !== fileAttachBtn) {
+            if (!fileAutocomplete.contains(e.target) && e.target !== fileAttachBtn && e.target !== promptInput) {
                 closeFileAutocomplete();
             }
         });
 
         // Provider buttons
         const providerButtons = document.querySelectorAll('.provider-btn');
+        // Engine change -> toggle moonshot model input visibility
+        const engineSelect = document.getElementById('engine-select');
+        if (engineSelect) {
+            engineSelect.addEventListener('change', () => {
+                const row = document.getElementById('moonshot-model-row');
+                if (row) row.style.display = engineSelect.value === 'moonshot' ? 'flex' : 'none';
+            });
+            // initialize visible state
+            const initRow = document.getElementById('moonshot-model-row');
+            if (initRow) initRow.style.display = engineSelect.value === 'moonshot' ? 'flex' : 'none';
+        }
+
+        // Suggestions select -> fill input
+        const modelSuggestions = document.getElementById('moonshot-model-suggestions');
+        const modelInput = document.getElementById('moonshot-model-input');
+        if (modelSuggestions && modelInput) {
+            modelSuggestions.addEventListener('change', () => {
+                if (modelSuggestions.value) {
+                    modelInput.value = modelSuggestions.value;
+                    saveMoonshotModel(modelInput.value);
+                }
+            });
+            modelInput.addEventListener('change', () => saveMoonshotModel(modelInput.value));
+        }
         providerButtons.forEach(btn => {
             btn.addEventListener('click', () => {
                 providerButtons.forEach(b => b.classList.remove('active'));
@@ -135,6 +197,11 @@
         const task = document.getElementById('task-select').value;
         const routingMode = document.getElementById('mode-select').value;
         const selectedProvider = getSelectedProvider();
+        // Persist moonshot model in case user changed it
+        const msInput = document.getElementById('moonshot-model-input');
+        if (msInput && selectedProvider === 'moonshot') {
+            saveMoonshotModel(msInput.value);
+        }
 
         // Add user message to conversation
         addMessageToConversation('user', prompt, selectedProvider);
@@ -273,7 +340,10 @@
         const formattedContent = type === 'ai' ? markdownToHtml(content) : escapeHtml(content);
 
         let messageHTML = `
-            <div class="message-content">${formattedContent}</div>
+            <div class="message-header">
+                <div class="message-avatar">${type === 'user' ? 'U' : 'AI'}</div>
+                <div class="message-content">${formattedContent}</div>
+            </div>
             <div class="message-meta">
                 <span>${timestamp}</span>
         `;
@@ -305,6 +375,7 @@
     }
 
     function toggleFileAutocomplete() {
+        console.log('Toggle file autocomplete clicked, current state:', isFileAutocompleteOpen);
         if (isFileAutocompleteOpen) {
             closeFileAutocomplete();
         } else {
@@ -313,9 +384,31 @@
     }
 
     function openFileAutocomplete() {
+        console.log('Opening file autocomplete...');
+
+        // Check if element exists
+        if (!fileAutocomplete) {
+            console.error('fileAutocomplete element is null!');
+            console.log('Trying to find it again...');
+            fileAutocomplete = document.getElementById('file-autocomplete');
+            console.log('Found element:', fileAutocomplete);
+
+            if (!fileAutocomplete) {
+                console.error('fileAutocomplete element still not found in DOM!');
+                return;
+            }
+        }
+
+        // Force visibility for debugging
         fileAutocomplete.style.display = 'block';
+        fileAutocomplete.style.visibility = 'visible';
+        fileAutocomplete.style.opacity = '1';
+        fileAutocomplete.style.backgroundColor = 'var(--bg-card)';
+        fileAutocomplete.style.border = '1px solid var(--border-primary)';
+        fileAutocomplete.style.minHeight = '100px';
+
         fileSearch.value = '';
-        fileResults.innerHTML = '';
+        fileResults.innerHTML = '<div class="file-result-item">Loading files...</div>';
         fileSearch.focus();
         isFileAutocompleteOpen = true;
 
@@ -325,6 +418,18 @@
         // Load initial file list
         vscode.postMessage({
             type: 'getProjectFiles'
+        });
+
+        console.log('File autocomplete opened and positioned');
+        console.log('Autocomplete element exists:', !!fileAutocomplete);
+        console.log('Autocomplete parent element:', fileAutocomplete.parentElement);
+        console.log('Autocomplete computed styles:', {
+            display: getComputedStyle(fileAutocomplete).display,
+            position: getComputedStyle(fileAutocomplete).position,
+            bottom: getComputedStyle(fileAutocomplete).bottom,
+            zIndex: getComputedStyle(fileAutocomplete).zIndex,
+            width: getComputedStyle(fileAutocomplete).width,
+            height: getComputedStyle(fileAutocomplete).height
         });
     }
 
@@ -343,30 +448,40 @@
             // Position relative to @ button
             positionAutocompleteAtButton();
         }
+
+        // Ensure the autocomplete is visible and properly positioned
+        fileAutocomplete.style.zIndex = '1000';
+        fileAutocomplete.style.display = 'block';
     }
 
     function positionAutocompleteAtCharacter(atPosition) {
-        // Try to position near the @ character in text
-        // This is a simplified approach - in a real implementation
-        // we'd need to calculate exact text cursor coordinates
-
-        // For now, position above the text input area
-        const textInputRect = promptInput.getBoundingClientRect();
+        // Position above the text input area with better visibility
         const commandInputRect = document.querySelector('.command-input-wrapper').getBoundingClientRect();
+        const parentContainer = document.querySelector('.command-input-container');
 
-        fileAutocomplete.style.bottom = '100%';
-        fileAutocomplete.style.top = 'auto';
-        fileAutocomplete.style.left = '0';
-        fileAutocomplete.style.right = 'auto';
-        fileAutocomplete.style.width = '300px';
+        // Use fixed positioning relative to viewport for precise placement
+        fileAutocomplete.style.position = 'fixed';
+        fileAutocomplete.style.top = (commandInputRect.top - 180) + 'px';
+        fileAutocomplete.style.left = commandInputRect.left + 'px';
+        fileAutocomplete.style.width = commandInputRect.width + 'px';
+        fileAutocomplete.style.maxHeight = '180px';
+        fileAutocomplete.style.overflowY = 'auto';
+        fileAutocomplete.style.zIndex = '1000';
     }
 
     function positionAutocompleteAtButton() {
-        // Position above the @ button
-        fileAutocomplete.style.bottom = '100%';
-        fileAutocomplete.style.top = 'auto';
-        fileAutocomplete.style.left = '0';
-        fileAutocomplete.style.right = 'auto';
+        // Position aligned with the @ button
+        const fileAttachBtn = document.getElementById('file-attach-btn');
+        const fileAttachBtnRect = fileAttachBtn.getBoundingClientRect();
+
+        // Position the autocomplete so its bottom aligns with the button's bottom
+        fileAutocomplete.style.position = 'fixed';
+        fileAutocomplete.style.top = (fileAttachBtnRect.bottom - 180) + 'px';
+        fileAutocomplete.style.left = fileAttachBtnRect.left + 'px';
+        fileAutocomplete.style.width = '300px';
+        fileAutocomplete.style.maxHeight = '180px';
+        fileAutocomplete.style.overflowY = 'auto';
+        fileAutocomplete.style.zIndex = '1000';
     }
 
     function closeFileAutocomplete() {
@@ -406,10 +521,62 @@
         });
     }
 
+    function saveMoonshotModel(modelName) {
+        if (!modelName) return;
+        vscode.postMessage({
+            type: 'updateSettings',
+            settings: { moonshotDefaultModel: modelName }
+        });
+        window.moonshotDefaultModel = modelName;
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    }
+
+    // Lightweight syntax highlighting to mimic Cursor style
+    function highlightCode(lang, code) {
+        let html = escapeHtml(code);
+
+        const stringPattern = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'|`([^`\\]|\\.)*`/g;
+        const numberPattern = /\b\d+(?:\.\d+)?\b/g;
+        const booleanPattern = /\b(true|false|null|undefined)\b/g;
+        const lineCommentPattern = /(^|\n)\s*(\/\/.*?)(?=\n|$)/g;
+        const blockCommentPattern = /\/\*[\s\S]*?\*\//g;
+        const functionPattern = /\b([a-zA-Z_][\w]*)\s*(?=\()/g;
+
+        const jsKeywords = [
+            'await','break','case','catch','class','const','continue','debugger','default','delete','do','else','enum','export','extends','finally','for','function','if','import','in','instanceof','let','new','return','super','switch','this','throw','try','typeof','var','void','while','with','yield'
+        ];
+        const keywordPattern = new RegExp('\\b(' + jsKeywords.join('|') + ')\\b', 'g');
+
+        if (lang === 'json') {
+            // Highlight property keys first (strings before colon)
+            html = html.replace(/\"([^\"\\]|\\.)*\"(?=\s*:)/g, m => `<span class="token property">${m}</span>`);
+            html = html.replace(stringPattern, m => `<span class="token string">${m}</span>`);
+            html = html.replace(numberPattern, m => `<span class="token number">${m}</span>`);
+            html = html.replace(/\b(true|false|null)\b/g, m => `<span class="token boolean">${m}</span>`);
+            return html;
+        }
+
+        // Generic JS/TS/Python-ish minimal highlight
+        html = html.replace(blockCommentPattern, m => `<span class="token comment">${m}</span>`);
+        html = html.replace(lineCommentPattern, (m, p1, p2) => `${p1}<span class="token comment">${p2}</span>`);
+        html = html.replace(stringPattern, m => `<span class="token string">${m}</span>`);
+        html = html.replace(numberPattern, m => `<span class="token number">${m}</span>`);
+        if (lang === 'js' || lang === 'ts' || lang === 'javascript' || lang === 'typescript') {
+            html = html.replace(keywordPattern, m => `<span class="token keyword">${m}</span>`);
+            html = html.replace(functionPattern, m => `<span class="token function">${m}</span>`);
+        } else if (lang === 'py' || lang === 'python') {
+            const pyKeywords = ['def','class','return','if','elif','else','for','while','try','except','finally','with','as','lambda','yield','import','from','pass','break','continue','True','False','None'];
+            const pyPattern = new RegExp('\\b(' + pyKeywords.join('|') + ')\\b','g');
+            html = html.replace(pyPattern, m => `<span class="token keyword">${m}</span>`);
+            html = html.replace(functionPattern, m => `<span class="token function">${m}</span>`);
+        }
+        html = html.replace(booleanPattern, m => `<span class="token boolean">${m}</span>`);
+        return html;
     }
 
     function formatCoachingAdvice(advice) {
@@ -443,21 +610,40 @@
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
             // Code blocks with language detection and copy button
-            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            .replace(/```(\w+)?(?:\s+([^\n`]+))?\n([\s\S]*?)```/g, (match, language, filename, code) => {
                 const lang = language || 'text';
-                const escapedCode = escapeHtml(code.trim());
+                const raw = code.trim();
+                const highlightedBase = highlightCode(lang, raw);
+                const highlighted = (lang === 'diff' || /(^|\n)[+-]/.test(raw))
+                    ? wrapDiffLines(highlightedBase, raw)
+                    : highlightedBase;
+                const file = filename ? filename.trim() : '';
+                const isDiff = lang === 'diff' || /(^|\n)[+-]/.test(code);
+                const added = (code.match(/^\+.+$/gm) || []).length;
+                const deleted = (code.match(/^-.+$/gm) || []).length;
+                const fileIcon = getFileIconSvg(file || lang);
                 return `
                     <div class="code-block">
                         <div class="code-header">
-                            <span class="code-language">${lang}</span>
-                            <button class="copy-code-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                                    <path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/>
-                                    <path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/>
-                                </svg>
-                            </button>
+                            <div class="code-title">
+                                <span class="code-file-icon">${fileIcon}</span>
+                                <span class="code-filename">${escapeHtml(file) || lang}</span>
+                                <span class="code-badges">${isDiff ? `<span class="badge-add">+${added}</span><span class="badge-del">-${deleted}</span>` : ''}</span>
+                            </div>
+                            <div class="code-actions">
+                                <button class="icon-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/><path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/></svg>
+                                </button>
+                                ${isDiff ? `
+                                <button class="icon-btn" onclick="postCodeAction(this, 'accept', '${escapeHtml(file)}')" title="Accept changes">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 10.2L3.8 8l-1 1L6 12l7-7-1-1z"/></svg>
+                                </button>
+                                <button class="icon-btn" onclick="postCodeAction(this, 'reject', '${escapeHtml(file)}')" title="Reject changes">
+                                    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 4l9 9m0-9L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                </button>` : ''}
+                            </div>
                         </div>
-                        <pre><code class="language-${lang}">${escapedCode}</code></pre>
+                        <pre><code class="language-${lang}">${highlighted}</code></pre>
                     </div>
                 `;
             })
@@ -492,6 +678,53 @@
         });
     }
 
+    // Post accept/reject actions for code changes back to extension
+    function postCodeAction(button, action, file) {
+        const codeBlock = button.closest('.code-block');
+        const codeElement = codeBlock.querySelector('code');
+        const header = codeBlock.querySelector('.code-filename');
+        const languageClass = (codeElement && codeElement.className) || '';
+        const languageMatch = languageClass.match(/language-([\w-]+)/);
+        const language = languageMatch ? languageMatch[1] : 'text';
+        const contentText = codeElement ? codeElement.textContent : '';
+        const isDiff = language === 'diff' || /^\s*[+-]/m.test(contentText);
+        vscode.postMessage({
+            type: 'codeAction',
+            action,
+            file,
+            content: contentText,
+            language,
+            isDiff
+        });
+    }
+
+    // Provide small file icon SVGs based on extension
+    function getFileIconSvg(name) {
+        const lower = (name || '').toLowerCase();
+        const svg = (path) => `<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">${path}</svg>`;
+        if (lower.endsWith('.ts') || lower.endsWith('.tsx')) return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/><text x="5" y="12" font-size="6" fill="currentColor">TS</text>');
+        if (lower.endsWith('.js') || lower.endsWith('.jsx')) return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/><text x="5" y="12" font-size="6" fill="currentColor">JS</text>');
+        if (lower.endsWith('.json')) return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/><text x="3" y="12" font-size="6" fill="currentColor">JSON</text>');
+        if (lower.endsWith('.md')) return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/><text x="4" y="12" font-size="6" fill="currentColor">MD</text>');
+        if (lower.endsWith('.py')) return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/><text x="5" y="12" font-size="6" fill="currentColor">PY</text>');
+        return svg('<path d="M2 2h7l3 3v9c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V3c0-.6.4-1 1-1z"/>');
+    }
+
+    // Wrap + and - lines with diff classes; preserve existing highlighting by wrapping per raw lines
+    function wrapDiffLines(highlightedHtml, rawText) {
+        const rawLines = rawText.split(/\r?\n/);
+        const highlightedLines = highlightedHtml.split(/\r?\n/);
+        const out = [];
+        for (let i = 0; i < highlightedLines.length; i++) {
+            const raw = rawLines[i] || '';
+            const line = highlightedLines[i] || '';
+            if (raw.startsWith('+')) out.push(`<span class="diff-line diff-add">${line}</span>`);
+            else if (raw.startsWith('-')) out.push(`<span class="diff-line diff-del">${line}</span>`);
+            else out.push(`<span class="diff-line">${line}</span>`);
+        }
+        return out.join('\n');
+    }
+
     // Progressive markdown formatting for streaming
     function progressiveMarkdownToHtml(markdown) {
         if (!markdown) return '';
@@ -512,23 +745,41 @@
             .replace(/\*\*([^*]*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*([^*]*?)\*/g, '<em>$1</em>')
             // Code blocks (only complete ones)
-            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+            .replace(/```(\w+)?(?:\s+([^\n`]+))?\n([\s\S]*?)```/g, (match, language, filename, code) => {
                 // Only format complete code blocks
                 if (code.includes('\n```') || !code.includes('```')) {
                     const lang = language || 'text';
-                    const escapedCode = escapeHtml(code.trim());
+                    const raw = code.trim();
+                    const highlighted = (lang === 'diff' || /(^|\n)[+-]/.test(raw))
+                        ? wrapDiffLines(highlightCode(lang, raw), raw)
+                        : highlightCode(lang, raw);
+                    const file = filename ? filename.trim() : '';
+                    const isDiff = lang === 'diff' || /(^|\n)[+-]/.test(code);
+                    const added = (code.match(/^\+.+$/gm) || []).length;
+                    const deleted = (code.match(/^-.+$/gm) || []).length;
+                    const fileIcon = getFileIconSvg(file || lang);
                     return `
                         <div class="code-block">
                             <div class="code-header">
-                                <span class="code-language">${lang}</span>
-                                <button class="copy-code-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
-                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
-                                        <path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/>
-                                        <path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/>
-                                    </svg>
-                                </button>
+                                <div class="code-title">
+                                    <span class="code-file-icon">${fileIcon}</span>
+                                    <span class="code-filename">${escapeHtml(file) || lang}</span>
+                                    <span class="code-badges">${isDiff ? `<span class="badge-add">+${added}</span><span class="badge-del">-${deleted}</span>` : ''}</span>
+                                </div>
+                                <div class="code-actions">
+                                    <button class="icon-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
+                                        <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/><path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/></svg>
+                                    </button>
+                                    ${isDiff ? `
+                                    <button class="icon-btn" onclick="postCodeAction(this, 'accept', '${escapeHtml(file)}')" title="Accept changes">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M6 10.2L3.8 8l-1 1L6 12l7-7-1-1z"/></svg>
+                                    </button>
+                                    <button class="icon-btn" onclick="postCodeAction(this, 'reject', '${escapeHtml(file)}')" title="Reject changes">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 4l9 9m0-9L3 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+                                    </button>` : ''}
+                                </div>
                             </div>
-                            <pre><code class="language-${lang}">${escapedCode}</code></pre>
+                            <pre><code class="language-${lang}">${highlighted}</code></pre>
                         </div>
                     `;
                 }
@@ -808,6 +1059,9 @@
                 engineSelect.value = settings.defaultEngine;
             }
         }
+
+        // If Moonshot default model is provided, store it for requests
+        window.moonshotDefaultModel = settings.moonshotDefaultModel || 'moonshot-v1-8k';
 
         if (settings.defaultTaskType) {
             const taskSelect = document.getElementById('task-select');

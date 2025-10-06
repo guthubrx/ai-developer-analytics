@@ -107,6 +107,8 @@ export class AIRouter {
                 return await this.clientManager.deepseekClient.execute(prompt);
             case 'ollama':
                 return await this.clientManager.ollamaClient.execute(prompt);
+            case 'moonshot':
+                return await this.clientManager.moonshotClient.execute(prompt);
             default:
                 throw new Error(`Unsupported provider: ${provider}`);
         }
@@ -233,6 +235,8 @@ export class AIRouter {
                     return await this.clientManager.deepseekClient.executeWithStreaming(prompt, streamingCallback);
                 case 'ollama':
                     return await this.clientManager.ollamaClient.executeWithStreaming(prompt, streamingCallback);
+                case 'moonshot':
+                    return await this.clientManager.moonshotClient.executeWithStreaming(prompt, streamingCallback);
                 default:
                     throw new Error(`Unsupported provider: ${provider}`);
             }

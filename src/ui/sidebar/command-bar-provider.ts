@@ -72,7 +72,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             ]
         };
 
-        webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+        const html = this._getHtmlForWebview(webviewView.webview);
+        webviewView.webview.html = html;
+        console.log('WebView HTML loaded, checking for file-autocomplete...');
+        console.log('HTML contains file-autocomplete:', html.includes('file-autocomplete'));
 
         // Send initial settings when webview is loaded
         this.handleGetSettings();
@@ -106,6 +109,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         break;
                     case 'loadMetrics':
                         await this.handleLoadMetrics();
+                        break;
+                    case 'codeAction':
+                        await this.handleCodeAction(data);
                         break;
                 }
             }
@@ -217,6 +223,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             defaultEngine: config.get('defaultEngine'),
             defaultTaskType: config.get('defaultTaskType'),
             defaultMode: config.get('defaultMode'),
+            moonshotDefaultModel: config.get('moonshotDefaultModel'),
             accentColor: config.get('accentColor'),
             showMetrics: config.get('showMetrics'),
             coachEnabled: config.get('coachEnabled'),
@@ -343,7 +350,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.js'));
         const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'reset.css'));
         const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'vscode.css'));
-        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.css'));
+        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main-vscode.css'));
 
         // Use a nonce to only allow specific scripts to be run
         // Utiliser un nonce pour n'autoriser que des scripts spécifiques à s'exécuter
@@ -376,43 +383,46 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
 
                     <!-- Les dropdowns ont été déplacées vers la zone de commande -->
 
-                    <!-- Barre d'onglets des sessions -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M2 3h12c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V4c0-.6.4-1 1-1z"/>
-                                    <path d="M4 6h8M4 8h6M4 10h4"/>
-                                </svg>
-                                Sessions
+                    <!-- Conteneur de contenu principal -->
+                    <div class="main-content">
+                        <!-- Barre d'onglets des sessions -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M2 3h12c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V4c0-.6.4-1 1-1z"/>
+                                        <path d="M4 6h8M4 8h6M4 10h4"/>
+                                    </svg>
+                                    Sessions
+                                </div>
+                            </div>
+                            <div class="session-tabs-container">
+                                <div class="session-tabs" id="session-tabs">
+                                    <!-- Les onglets seront générés dynamiquement -->
+                                </div>
+                                <button class="action-btn" id="new-session-btn" title="New Session">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <div class="session-tabs-container">
-                            <div class="session-tabs" id="session-tabs">
-                                <!-- Les onglets seront générés dynamiquement -->
-                            </div>
-                            <button class="action-btn" id="new-session-btn" title="New Session">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
 
-                    <!-- Zone de conversation moderne -->
-                    <div class="card">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                    <path d="M8 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z"/>
-                                    <path d="M8 12c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4z"/>
-                                    <path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4z"/>
-                                </svg>
-                                Conversation
+                        <!-- Zone de conversation moderne -->
+                        <div class="card">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <path d="M8 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z"/>
+                                        <path d="M8 12c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4z"/>
+                                        <path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4z"/>
+                                    </svg>
+                                    Conversation
+                                </div>
                             </div>
-                        </div>
-                        <div class="conversation-container" id="conversation-container">
-                            <div id="conversation-content" class="conversation-content"></div>
+                            <div class="conversation-container" id="conversation-container">
+                                <div id="conversation-content" class="conversation-content"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -466,12 +476,25 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                                             <option value="gpt5">GPT-5</option>
                                             <option value="claude">Claude</option>
                                             <option value="deepseek" selected>DeepSeek</option>
+                                            <option value="moonshot">Moonshot</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <!-- Zone de texte auto-expansive -->
                                 <div class="text-input-wrapper">
+                                    <!-- Moonshot model input (shown only when Moonshot selected) -->
+                                    <div id="moonshot-model-row" style="display:none; margin-bottom:6px; gap:6px; align-items:center;">
+                                        <label for="moonshot-model-input" style="font-size:11px; color: var(--vscode-descriptionForeground);">Moonshot model</label>
+                                        <input id="moonshot-model-input" type="text" placeholder="e.g., moonshot-v1-8k or moonshot-chat" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border:1px solid var(--border-primary); border-radius:2px; padding:4px 6px; font-size:11px;" />
+                                        <select id="moonshot-model-suggestions" class="compact-select" title="Model suggestions">
+                                            <option value="">Suggestions</option>
+                                            <option value="moonshot-v1-8k">moonshot-v1-8k</option>
+                                            <option value="moonshot-v1-32k">moonshot-v1-32k</option>
+                                            <option value="moonshot-v1-128k">moonshot-v1-128k</option>
+                                            <option value="moonshot-chat">moonshot-chat</option>
+                                        </select>
+                                    </div>
                                     <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>
                                 </div>
 
@@ -550,6 +573,103 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 }
             });
         }
+    }
+
+    /**
+     * Handle code accept/reject actions from webview
+     */
+    private async handleCodeAction(data: { action: 'accept' | 'reject', file?: string, content: string, language?: string, isDiff?: boolean }) {
+        try {
+            const file = data.file?.trim();
+
+            if (data.action === 'reject') {
+                vscode.window.showInformationMessage('Changes rejected' + (file ? ` for ${file}` : ''));
+                return;
+            }
+
+            // Accept
+            if (data.isDiff) {
+                await this.applyUnifiedDiff(data.content, file);
+                vscode.window.showInformationMessage('Diff applied' + (file ? ` to ${file}` : ''));
+            } else if (file) {
+                await this.writeFileToWorkspace(file, data.content);
+                vscode.window.showInformationMessage(`File updated: ${file}`);
+            } else {
+                vscode.window.showWarningMessage('No target file specified; cannot apply changes.');
+            }
+        } catch (err: any) {
+            vscode.window.showErrorMessage(`Failed to apply changes: ${err?.message || err}`);
+        }
+    }
+
+    private async writeFileToWorkspace(relativePath: string, content: string) {
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        if (!folder) throw new Error('No workspace folder open');
+        const uri = vscode.Uri.joinPath(folder.uri, relativePath);
+        const enc = new TextEncoder();
+        await vscode.workspace.fs.writeFile(uri, enc.encode(content));
+    }
+
+    // Minimal unified diff applier (adds lines starting with +, removes -). Context lines are ignored.
+    private async applyUnifiedDiff(diffText: string, relativePath?: string) {
+        // Try to detect file from diff header if not provided
+        let target = relativePath;
+        const fileMatch = diffText.match(/^\+\+\+\s+[ab\/]*([^\n]+)|^diff --git a\/([^\n]+) b\/([^\n]+)/m);
+        if (!target && fileMatch) {
+            target = fileMatch[1] || fileMatch[2] || fileMatch[3];
+        }
+        if (!target) throw new Error('Target file not specified in diff');
+
+        const folder = vscode.workspace.workspaceFolders?.[0];
+        if (!folder) throw new Error('No workspace folder open');
+        const uri = vscode.Uri.joinPath(folder.uri, target);
+
+        // Read current content
+        let current = '';
+        try {
+            const buf = await vscode.workspace.fs.readFile(uri);
+            current = new TextDecoder().decode(buf);
+        } catch {
+            // If file does not exist, we will create it from added lines
+            current = '';
+        }
+
+        // Very naive patch: apply line by line ignoring hunk headers
+        const lines = current.split(/\r?\n/);
+        const result: string[] = [];
+        let i = 0;
+        const diffLines = diffText.split(/\r?\n/);
+        for (const dl of diffLines) {
+            if (dl.startsWith('+++') || dl.startsWith('---') || dl.startsWith('@@') || dl.startsWith('diff ')) {
+                continue;
+            }
+            if (dl.startsWith('+')) {
+                result.push(dl.slice(1));
+            } else if (dl.startsWith('-')) {
+                // remove a line from current if available (advance pointer)
+                i++; // skip one from original
+            } else {
+                // context line: take from current when possible, else from dl
+                if (i < lines.length) {
+                    const existing = lines[i];
+                    if (existing !== undefined) {
+                        result.push(existing);
+                    }
+                    i++;
+                } else {
+                    result.push(dl);
+                }
+            }
+        }
+        // Append remaining original lines
+        while (i < lines.length) {
+            const tail = lines[i++];
+            if (tail !== undefined) {
+                result.push(tail);
+            }
+        }
+
+        await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(result.join('\n')));
     }
 }
 
