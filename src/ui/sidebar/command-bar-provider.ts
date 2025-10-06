@@ -363,6 +363,16 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                                 </div>
                             </div>
 
+                            <!-- Dropdown pour sélectionner le moteur AI -->
+                            <div class="engine-selector">
+                                <select id="engine-select" class="engine-select" title="Select AI Engine">
+                                    <option value="auto">Auto</option>
+                                    <option value="gpt5">GPT-5</option>
+                                    <option value="claude">Claude</option>
+                                    <option value="deepseek" selected>DeepSeek</option>
+                                </select>
+                            </div>
+
                             <!-- Zone de texte auto-expansive -->
                             <div class="text-input-wrapper">
                                 <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>

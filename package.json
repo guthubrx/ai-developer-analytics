@@ -3,7 +3,7 @@
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
   "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "license": "AGPL-3.0-only",
   "icon": "media/icon.png",
   "repository": {

@@ -210,8 +210,8 @@
     }
 
     function getSelectedProvider() {
-        const activeBtn = document.querySelector('.provider-btn.active');
-        return activeBtn ? activeBtn.dataset.provider : 'auto';
+        const engineSelect = document.getElementById('engine-select');
+        return engineSelect ? engineSelect.value : 'deepseek';
     }
 
     function loadSettings() {

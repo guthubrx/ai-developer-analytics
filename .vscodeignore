@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/**
+!node_modules/sql.js/**
+!node_modules/crypto-js/**
+!node_modules/axios/**
+!node_modules/lru-cache/**
+!node_modules/openai/**
+!node_modules/@anthropic-ai/**
+
+# Build output
+# out/**  # Commented out to include compiled extension
+
+# TypeScript
+src/**
+*.ts
+*.tsx
+
+# Tests
+test/**
+*.test.*
+
+# Documentation
+docs/**
+*.md
+
+# Configuration files
+*.config.js
+*.config.ts
+
+# Git
+.git/**
+
+# VS Code
+.vscode/**
+
+# Package files
+*.tgz
+*.vsix
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+tmp/**
+
+# Media files
+# media/**  # Commented out to include icon
+
+# Prompts
+# prompts/**  # Commented out to include prompts
+
+# MCP Server
+server-mcp/**
