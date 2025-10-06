@@ -141,6 +141,69 @@
           "type": "string",
           "default": "",
           "description": "DeepSeek API key for AI requests"
+        },
+        "aiAnalytics.commandBarFontFamily": {
+          "type": "string",
+          "default": "var(--vscode-editor-font-family)",
+          "description": "Font family for the AI Command Bar interface"
+        },
+        "aiAnalytics.commandBarFontSize": {
+          "type": "number",
+          "default": 13,
+          "description": "Base font size for the AI Command Bar interface"
+        },
+        "aiAnalytics.defaultEngine": {
+          "type": "string",
+          "default": "deepseek",
+          "enum": ["auto", "deepseek", "openai", "anthropic", "ollama"],
+          "description": "Default AI engine selection"
+        },
+        "aiAnalytics.defaultTaskType": {
+          "type": "string",
+          "default": "general",
+          "enum": ["general", "code", "documentation", "debug"],
+          "description": "Default task type selection"
+        },
+        "aiAnalytics.defaultMode": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "eco", "normal", "quality", "strict-json", "creative"],
+          "description": "Default mode selection"
+        },
+        "aiAnalytics.accentColor": {
+          "type": "string",
+          "default": "#5B7FED",
+          "description": "Accent color for the interface (hex color code)"
+        },
+        "aiAnalytics.showMetrics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show metrics section in the command bar"
+        },
+        "aiAnalytics.coachEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI coaching advice"
+        },
+        "aiAnalytics.coachCollapsedByDefault": {
+          "type": "boolean",
+          "default": true,
+          "description": "Collapse coach advice section by default"
+        },
+        "aiAnalytics.sessionTabsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable session tabs functionality"
+        },
+        "aiAnalytics.autoExpandTextarea": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-expand textarea based on content"
+        },
+        "aiAnalytics.streamingEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable real-time streaming responses"
         }
       }
     }

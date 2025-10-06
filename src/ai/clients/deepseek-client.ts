@@ -8,7 +8,7 @@
 import * as vscode from 'vscode';
 import * as https from 'https';
 import { BaseAIClient } from './base-client';
-import { AIProvider, AIResponse } from '../types';
+import { AIProvider, AIResponse, StreamingCallback } from '../types';
 import { loadSystemPrompt } from '../system-prompt-loader';
 
 /**
@@ -86,6 +86,53 @@ export class DeepSeekClient extends BaseAIClient {
         } catch (error) {
             console.error(`[DeepSeek] Execution failed: ${error}`);
             throw new Error(`DeepSeek execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Execute prompt using DeepSeek with real streaming
+     * Exécuter un prompt avec DeepSeek avec vrai streaming
+     */
+    override async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+        console.log(`[DeepSeek] Starting streaming execution for prompt: "${prompt.substring(0, 50)}..."`);
+
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+
+        if (!this.apiKey || this.apiKey.trim() === '') {
+            console.error('[DeepSeek] API key not configured');
+            throw new Error('DeepSeek API key not configured');
+        }
+
+        const startTime = Date.now();
+
+        try {
+            // Use real DeepSeek API with streaming
+            // Utiliser l'API DeepSeek réelle avec streaming
+            const apiResponse = await this.deepseekChatStreaming(prompt, streamingCallback);
+            const latency = Date.now() - startTime;
+
+            // Extract real metrics from API response
+            // Extraire les vraies métriques de la réponse API
+            const inputTokens = apiResponse.usage?.prompt_tokens || this.calculateTokens(prompt);
+            const outputTokens = apiResponse.usage?.completion_tokens || this.calculateTokens(apiResponse.content);
+            const totalTokens = apiResponse.usage?.total_tokens || inputTokens + outputTokens;
+
+            console.log(`[DeepSeek] Streaming execution completed in ${latency}ms, tokens: ${totalTokens} (in: ${inputTokens}, out: ${outputTokens})`);
+
+            return {
+                content: apiResponse.content,
+                provider: 'deepseek',
+                tokens: totalTokens,
+                cost: this.calculateCost(inputTokens, outputTokens),
+                latency,
+                cacheHit: false,
+                model: 'deepseek-chat'
+            };
+        } catch (error) {
+            console.error(`[DeepSeek] Streaming execution failed: ${error}`);
+            throw new Error(`DeepSeek streaming execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -185,6 +232,49 @@ export class DeepSeekClient extends BaseAIClient {
     }
 
     /**
+     * Chat with DeepSeek using real API with streaming
+     * Discuter avec DeepSeek en utilisant l'API réelle avec streaming
+     */
+    private async deepseekChatStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
+        const apiUrl = 'https://api.deepseek.com/chat/completions';
+
+        const systemPrompt = loadSystemPrompt();
+
+        const requestBody = {
+            model: 'deepseek-chat',
+            messages: [
+                {
+                    role: 'system',
+                    content: systemPrompt
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            stream: true,
+            max_tokens: 2048
+        };
+
+        try {
+            console.log(`[DeepSeek] Sending streaming request to API: ${apiUrl}`);
+
+            const response = await this.makeStreamingApiRequest(apiUrl, requestBody, streamingCallback);
+            console.log(`[DeepSeek] Streaming API response completed`);
+
+            return response;
+
+        } catch (error) {
+            console.error('[DeepSeek] Streaming API call failed:', error);
+
+            // Fallback to normal API call if streaming fails
+            // Retour à l'appel API normal si le streaming échoue
+            console.log('[DeepSeek] Streaming failed, falling back to normal API');
+            return await this.deepseekChat(prompt);
+        }
+    }
+
+    /**
      * Make HTTP request using Node.js https module
      * Faire une requête HTTP avec le module https de Node.js
      */
@@ -222,6 +312,101 @@ export class DeepSeekClient extends BaseAIClient {
                         }
                     } else {
                         reject(new Error(`API error ${res.statusCode}: ${data}`));
+                    }
+                });
+            });
+
+            req.on('error', (error) => {
+                reject(new Error(`Network error: ${error.message}`));
+            });
+
+            req.write(postData);
+            req.end();
+        });
+    }
+
+    /**
+     * Make streaming HTTP request using Node.js https module
+     * Faire une requête HTTP streaming avec le module https de Node.js
+     */
+    private async makeStreamingApiRequest(url: string, body: any, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
+        return new Promise((resolve, reject) => {
+            const postData = JSON.stringify(body);
+            const urlObj = new URL(url);
+
+            const options = {
+                hostname: urlObj.hostname,
+                port: 443,
+                path: urlObj.pathname,
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.apiKey}`,
+                    'Content-Length': Buffer.byteLength(postData)
+                }
+            };
+
+            let fullContent = '';
+            let usage: any = null;
+
+            const req = https.request(options, (res) => {
+                let buffer = '';
+
+                res.on('data', (chunk) => {
+                    buffer += chunk;
+
+                    // Process complete lines for streaming
+                    // Traiter les lignes complètes pour le streaming
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // Keep incomplete line
+
+                    for (const line of lines) {
+                        if (line.trim() === '') continue;
+                        if (line.startsWith('data: ')) {
+                            const dataStr = line.substring(6); // Remove 'data: ' prefix
+
+                            if (dataStr === '[DONE]') {
+                                // Streaming complete
+                                // Streaming terminé
+                                resolve({
+                                    content: fullContent,
+                                    usage
+                                });
+                                return;
+                            }
+
+                            try {
+                                const data = JSON.parse(dataStr);
+
+                                if (data.choices && data.choices[0] && data.choices[0].delta) {
+                                    const delta = data.choices[0].delta;
+
+                                    if (delta.content) {
+                                        fullContent += delta.content;
+                                        streamingCallback.onChunk(fullContent);
+                                    }
+
+                                    if (data.usage) {
+                                        usage = data.usage;
+                                    }
+                                }
+                            } catch (parseError) {
+                                console.warn('[DeepSeek] Failed to parse streaming data:', parseError);
+                            }
+                        }
+                    }
+                });
+
+                res.on('end', () => {
+                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                        // If we didn't get [DONE], resolve with what we have
+                        // Si nous n'avons pas reçu [DONE], résoudre avec ce que nous avons
+                        resolve({
+                            content: fullContent,
+                            usage
+                        });
+                    } else {
+                        reject(new Error(`API error ${res.statusCode}`));
                     }
                 });
             });

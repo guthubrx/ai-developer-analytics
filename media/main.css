@@ -1,5 +1,9 @@
 /* Main CSS for AI Command Bar - Cursor Style */
 
+:root {
+    --accent-color: #5B7FED;
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -12,7 +16,8 @@ body {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
 }
 
 /* Header Section */
@@ -109,22 +114,25 @@ body {
 }
 
 .new-session-btn {
-    background: var(--vscode-button-secondaryBackground);
-    border: 1px solid var(--vscode-button-secondaryBorder);
+    background: transparent;
+    border: 1px solid var(--vscode-panel-border);
     border-radius: 3px;
-    color: var(--vscode-button-secondaryForeground);
+    color: var(--vscode-tab-inactiveForeground);
     cursor: pointer;
-    padding: 6px 8px;
+    padding: 4px 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     margin-left: 8px;
-    font-size: 12px;
+    font-size: 11px;
+    opacity: 0.7;
 }
 
 .new-session-btn:hover {
-    background: var(--vscode-button-secondaryHoverBackground);
+    background: var(--vscode-tab-hoverBackground);
+    color: var(--vscode-tab-activeForeground);
+    opacity: 1;
 }
 
 /* Nouvelle barre de commande compacte style Cursor */
@@ -324,12 +332,13 @@ body {
 }
 
 .send-btn {
-    background: #5B7FED;
+    background: var(--accent-color);
     color: white;
 }
 
 .send-btn:hover {
-    background: #6B8FFF;
+    background: var(--accent-color);
+    filter: brightness(1.1);
     color: white;
 }
 
@@ -451,14 +460,15 @@ body {
 }
 
 .provider-btn.active {
-    background: #5B7FED;
-    border-color: #5B7FED;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
     color: white;
 }
 
 .provider-btn.active:hover {
-    background: #6B8FFF;
-    border-color: #6B8FFF;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    filter: brightness(1.1);
 }
 
 /* Zone de conversation WhatsApp */
@@ -469,8 +479,8 @@ body {
     margin-bottom: 0;
     border: none;
     background: transparent;
-    height: calc(100vh - 220px); /* Adjusted for sticky tabs */
-    max-height: none;
+    max-height: calc(100vh - 280px); /* Maximum height to stop above input section */
+    min-height: 200px; /* Minimum height for usability */
 }
 
 /* Zone fixe en bas */
@@ -523,6 +533,12 @@ body {
     margin-left: 20px;
 }
 
+/* Dynamic accent color for user messages */
+.message.user {
+    background: rgba(var(--accent-color-rgb, 91, 127, 237), 0.1);
+    border: 1px solid rgba(var(--accent-color-rgb, 91, 127, 237), 0.2);
+}
+
 .message.ai {
     padding: 8px 12px;
     line-height: 1.4;
@@ -567,6 +583,94 @@ body {
     font-size: 13px;
     line-height: 1.5;
     color: var(--vscode-foreground);
+}
+
+/* Streaming styles */
+.message.ai.streaming .streaming-cursor {
+    animation: cursorBlink 1s infinite;
+    color: var(--vscode-foreground);
+}
+
+@keyframes cursorBlink {
+    0%, 50% {
+        opacity: 1;
+    }
+    51%, 100% {
+        opacity: 0;
+    }
+}
+
+/* Enhanced code formatting */
+.code-block {
+    margin: 8px 0;
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--vscode-textCodeBlock-background);
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    background: var(--vscode-panel-background);
+    border-bottom: 1px solid var(--vscode-panel-border);
+    font-size: 11px;
+    color: var(--vscode-descriptionForeground);
+}
+
+.code-language {
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.copy-code-btn {
+    background: none;
+    border: none;
+    color: var(--vscode-descriptionForeground);
+    cursor: pointer;
+    padding: 2px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.copy-code-btn:hover {
+    background: var(--vscode-toolbar-hoverBackground);
+    opacity: 1;
+}
+
+.code-block pre {
+    margin: 0;
+    padding: 12px;
+    overflow-x: auto;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    line-height: 1.4;
+    background: var(--vscode-textCodeBlock-background);
+}
+
+.code-block code {
+    background: none;
+    padding: 0;
+    color: var(--vscode-editor-foreground);
+    font-family: var(--vscode-editor-font-family);
+}
+
+.inline-code {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 12px;
+    color: var(--vscode-editor-foreground);
+    border: 1px solid var(--vscode-panel-border);
 }
 
 .message-meta {

@@ -44,11 +44,22 @@ export interface AIResponse {
 }
 
 /**
+ * Streaming callback interface
+ * Interface de callback pour le streaming
+ */
+export interface StreamingCallback {
+    onChunk: (chunk: string) => void;
+    onComplete: (response: AIResponse) => Promise<void>;
+    onError: (error: Error) => void;
+}
+
+/**
  * AI Client interface
  * Interface client IA
  */
 export interface AIClient {
     execute(prompt: string): Promise<AIResponse>;
+    executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse>;
     isAvailable(): Promise<boolean>;
     getProvider(): AIProvider;
 }

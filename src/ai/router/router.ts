@@ -8,7 +8,7 @@
 import * as vscode from 'vscode';
 import { AIClientManager } from '../clients/manager';
 import { AnalyticsManager } from '../../analytics/manager';
-import { AIRoutingMode, AIProvider, AIResponse, TaskComplexity } from '../types';
+import { AIRoutingMode, AIProvider, AIResponse, TaskComplexity, StreamingCallback } from '../types';
 
 /**
  * Main AI Router class
@@ -144,6 +144,139 @@ export class AIRouter {
         }
 
         return await this.executeDirect(prompt, selectedProvider);
+    }
+
+    /**
+     * Execute AI request with streaming support
+     * Exécuter une requête IA avec support du streaming
+     */
+    async executeWithStreaming(
+        prompt: string,
+        routingMode: AIRoutingMode,
+        selectedProvider?: AIProvider | 'auto',
+        streamingCallback?: StreamingCallback
+    ): Promise<AIResponse> {
+        const startTime = Date.now();
+
+        try {
+            let response: AIResponse;
+
+            // Level 1: Direct execution (manual selection) - PRIORITAIRE
+            // Niveau 1 : Exécution directe (sélection manuelle) - PRIORITAIRE
+            if (selectedProvider && selectedProvider !== 'auto') {
+                response = await this.executeDirectWithStreaming(prompt, selectedProvider as AIProvider, streamingCallback);
+            }
+            // Level 2: Intelligent routing (automatic/delegated)
+            // Niveau 2 : Routage intelligent (automatique/délégué)
+            else {
+                response = await this.executeIntelligentRoutingWithStreaming(prompt, routingMode, streamingCallback);
+            }
+
+            const latency = Date.now() - startTime;
+
+            // Record analytics
+            // Enregistrer les analyses
+            await this.analyticsManager.recordRequest({
+                prompt,
+                response: response.content,
+                provider: response.provider,
+                routingMode,
+                latency,
+                tokens: response.tokens,
+                cost: response.cost,
+                success: true,
+                cacheHit: response.cacheHit
+            });
+
+            return response;
+
+        } catch (error) {
+            const latency = Date.now() - startTime;
+
+            // Record error analytics
+            // Enregistrer les analyses d'erreur
+            await this.analyticsManager.recordRequest({
+                prompt,
+                response: '',
+                provider: (selectedProvider === 'auto' ? 'openai' : selectedProvider) || 'openai',
+                routingMode,
+                latency,
+                tokens: 0,
+                cost: 0,
+                success: false,
+                cacheHit: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+
+            throw error;
+        }
+    }
+
+    /**
+     * Execute direct request with streaming
+     * Exécuter une requête directe avec streaming
+     */
+    private async executeDirectWithStreaming(
+        prompt: string,
+        provider: AIProvider,
+        streamingCallback?: StreamingCallback
+    ): Promise<AIResponse> {
+        // Use the client's streaming method if available
+        // Utiliser la méthode de streaming du client si disponible
+        if (streamingCallback) {
+            switch (provider) {
+                case 'openai':
+                    return await this.clientManager.openAIClient.executeWithStreaming(prompt, streamingCallback);
+                case 'anthropic':
+                    return await this.clientManager.anthropicClient.executeWithStreaming(prompt, streamingCallback);
+                case 'deepseek':
+                    return await this.clientManager.deepseekClient.executeWithStreaming(prompt, streamingCallback);
+                case 'ollama':
+                    return await this.clientManager.ollamaClient.executeWithStreaming(prompt, streamingCallback);
+                default:
+                    throw new Error(`Unsupported provider: ${provider}`);
+            }
+        } else {
+            // Fallback to normal execution if no streaming callback
+            // Retour à l'exécution normale si pas de callback de streaming
+            return await this.executeDirect(prompt, provider);
+        }
+    }
+
+    /**
+     * Execute intelligent routing with streaming
+     * Exécuter le routage intelligent avec streaming
+     */
+    private async executeIntelligentRoutingWithStreaming(
+        prompt: string,
+        routingMode: AIRoutingMode,
+        streamingCallback?: StreamingCallback
+    ): Promise<AIResponse> {
+        // For now, use the same simulation as direct execution
+        const complexity = this.analyzeTaskComplexity(prompt);
+        let selectedProvider: AIProvider;
+
+        switch (routingMode) {
+            case 'auto-local':
+                selectedProvider = this.localRouter(prompt, complexity);
+                break;
+            case 'auto-ollama':
+                selectedProvider = await this.ollamaRouter(prompt);
+                break;
+            case 'auto-gpt5':
+                selectedProvider = await this.gpt5Router(prompt);
+                break;
+            case 'auto-claude':
+                selectedProvider = await this.claudeRouter(prompt);
+                break;
+            case 'auto-deepseek':
+                selectedProvider = await this.deepseekRouter(prompt);
+                break;
+            default:
+                selectedProvider = this.localRouter(prompt, complexity);
+        }
+
+        return await this.executeDirectWithStreaming(prompt, selectedProvider, streamingCallback);
     }
 
     /**

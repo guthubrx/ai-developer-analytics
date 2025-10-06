@@ -6,7 +6,7 @@
  */
 
 import * as vscode from 'vscode';
-import { AIClient, AIProvider, AIResponse } from '../types';
+import { AIClient, AIProvider, AIResponse, StreamingCallback } from '../types';
 
 /**
  * Abstract base class for AI clients
@@ -31,6 +31,33 @@ export abstract class BaseAIClient implements AIClient {
      * Exécuter une requête IA
      */
     abstract execute(prompt: string): Promise<AIResponse>;
+
+    /**
+     * Execute AI request with streaming
+     * Exécuter une requête IA avec streaming
+     */
+    async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+        // Default implementation: use normal execution and simulate streaming
+        // Implémentation par défaut : utiliser l'exécution normale et simuler le streaming
+        const response = await this.execute(prompt);
+
+        // Simulate streaming by sending the response in chunks
+        // Simuler le streaming en envoyant la réponse par morceaux
+        const words = response.content.split(/\s+/);
+        let currentContent = '';
+
+        for (const word of words) {
+            currentContent += word + ' ';
+            streamingCallback.onChunk(currentContent.trim());
+
+            // Small delay to simulate streaming
+            // Petit délai pour simuler le streaming
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+
+        await streamingCallback.onComplete(response);
+        return response;
+    }
 
     /**
      * Check if client is available

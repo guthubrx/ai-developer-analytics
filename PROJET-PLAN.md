@@ -114,6 +114,7 @@ ai-developer-analytics-next-gen/
 - [x] **Extracteur métriques Claude** - Analyse interface Claude Code
 - [x] **Format unifié** - Structure de données compatible Cursor/Claude
 - [x] **Tests manuels** - Validation extraction métriques
+- [x] **Streaming réel IA** - Réception progressive avec formatage en temps réel
 
 ### 🧭 Architecture MCP (IMPLÉMENTÉE)
 - [x] **Serveur MCP** - Structure complète avec outils fs et web

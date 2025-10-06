@@ -10,7 +10,7 @@ import { AIRouter } from '../../ai/router/router';
 import { AnalyticsManager } from '../../analytics/manager';
 import { AICoach } from '../../coaching/coach';
 import { SessionManager } from '../../sessions/manager';
-import { AIRoutingMode, AIProvider } from '../../ai/types';
+import { AIRoutingMode, AIProvider, StreamingCallback } from '../../ai/types';
 
 /**
  * AI Command Bar WebView Provider
@@ -42,6 +42,16 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
 
         // Temporary usage to avoid TypeScript error
         console.log('Session Manager initialized:', this.sessionManager.constructor.name);
+
+        // Listen for configuration changes
+        context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('aiAnalytics')) {
+                    console.log('AI Analytics configuration changed, updating command bar...');
+                    this.handleGetSettings();
+                }
+            })
+        );
     }
 
     /**
@@ -63,6 +73,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         };
 
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+
+        // Send initial settings when webview is loaded
+        this.handleGetSettings();
 
         webviewView.webview.onDidReceiveMessage(
             async data => {
@@ -100,8 +113,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     }
 
     /**
-     * Handle prompt execution
-     * Gérer l'exécution du prompt
+     * Handle prompt execution with real streaming
+     * Gérer l'exécution du prompt avec vrai streaming
      */
     private async handleExecutePrompt(
         prompt: string,
@@ -118,27 +131,51 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 prompt
             });
 
-            const response = await this.aiRouter.execute(prompt, routingMode, provider);
-
+            // Create a streaming response element in the UI
             this._view.webview.postMessage({
-                type: 'executionCompleted',
-                response: response.content,
-                provider: response.provider,
-                latency: response.latency,
-                tokens: response.tokens,
-                cost: response.cost,
-                cacheHit: response.cacheHit
+                type: 'streamingStarted'
             });
 
-            // Get coaching advice
-            // Obtenir des conseils de coaching
-            const advice = await this.aiCoach.getAdvice(prompt, response);
-            if (advice) {
-                this._view.webview.postMessage({
-                    type: 'coachingAdvice',
-                    advice
-                });
-            }
+            // Define streaming callbacks
+            const streamingCallback: StreamingCallback = {
+                onChunk: (chunk: string) => {
+                    this._view?.webview.postMessage({
+                        type: 'streamingChunk',
+                        content: chunk,
+                        provider: provider || 'auto'
+                    });
+                },
+                onComplete: async (response: any) => {
+                    // Send final metrics
+                    this._view?.webview.postMessage({
+                        type: 'executionCompleted',
+                        response: response.content,
+                        provider: response.provider,
+                        latency: response.latency,
+                        tokens: response.tokens,
+                        cost: response.cost,
+                        cacheHit: response.cacheHit
+                    });
+
+                    // Get coaching advice
+                    const advice = await this.aiCoach.getAdvice(prompt, response);
+                    if (advice) {
+                        this._view?.webview.postMessage({
+                            type: 'coachingAdvice',
+                            advice
+                        });
+                    }
+                },
+                onError: (error: any) => {
+                    this._view?.webview.postMessage({
+                        type: 'executionError',
+                        error: error.message
+                    });
+                }
+            };
+
+            // Execute with real streaming
+            await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, streamingCallback);
 
         } catch (error) {
             this._view.webview.postMessage({
@@ -165,7 +202,20 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             routingMode: config.get('routingMode'),
             telemetryEnabled: config.get('telemetryEnabled'),
             hotReloadEnabled: config.get('hotReloadEnabled'),
-            fontSize: config.get('fontSize', 13)
+            fontSize: config.get('fontSize', 13),
+            // New configurable settings
+            commandBarFontFamily: config.get('commandBarFontFamily'),
+            commandBarFontSize: config.get('commandBarFontSize'),
+            defaultEngine: config.get('defaultEngine'),
+            defaultTaskType: config.get('defaultTaskType'),
+            defaultMode: config.get('defaultMode'),
+            accentColor: config.get('accentColor'),
+            showMetrics: config.get('showMetrics'),
+            coachEnabled: config.get('coachEnabled'),
+            coachCollapsedByDefault: config.get('coachCollapsedByDefault'),
+            sessionTabsEnabled: config.get('sessionTabsEnabled'),
+            autoExpandTextarea: config.get('autoExpandTextarea'),
+            streamingEnabled: config.get('streamingEnabled')
         };
 
         this._view.webview.postMessage({

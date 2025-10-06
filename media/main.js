@@ -27,6 +27,10 @@
     let thinkingAnimationInterval = null;
     let thinkingMessageElement = null;
 
+    // Streaming state
+    let streamingMessageElement = null;
+    let isStreaming = false;
+
     // Session management
     let sessions = [];
     let currentSessionId = null;
@@ -201,6 +205,63 @@
         }
     }
 
+    function startStreamingResponse() {
+        // Create streaming message element
+        streamingMessageElement = document.createElement('div');
+        streamingMessageElement.className = 'message ai streaming';
+        streamingMessageElement.id = 'streaming-message';
+
+        const timestamp = new Date().toLocaleTimeString();
+
+        streamingMessageElement.innerHTML = `
+            <div class="message-content">
+                <span class="streaming-text"></span>
+                <span class="streaming-cursor">▌</span>
+            </div>
+            <div class="message-meta">
+                <span>${timestamp}</span>
+                <span>Streaming...</span>
+            </div>
+        `;
+
+        conversationContent.appendChild(streamingMessageElement);
+        scrollToBottom();
+        isStreaming = true;
+    }
+
+    function updateStreamingResponse(content, provider) {
+        if (!streamingMessageElement || !isStreaming) {
+            return;
+        }
+
+        const contentElement = streamingMessageElement.querySelector('.streaming-text');
+        const metaElement = streamingMessageElement.querySelector('.message-meta span:last-child');
+
+        if (contentElement) {
+            // Format content progressively as it streams
+            const formattedContent = progressiveMarkdownToHtml(content);
+            contentElement.innerHTML = formattedContent;
+        }
+
+        if (metaElement && provider) {
+            metaElement.textContent = provider;
+        }
+
+        scrollToBottom();
+    }
+
+    function stopStreamingResponse() {
+        if (streamingMessageElement) {
+            // Remove the streaming cursor
+            const cursorElement = streamingMessageElement.querySelector('.streaming-cursor');
+            if (cursorElement) {
+                cursorElement.remove();
+            }
+            streamingMessageElement = null;
+        }
+        isStreaming = false;
+    }
+
     function addMessageToConversation(type, content, provider = null) {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${type}`;
@@ -351,10 +412,28 @@
         return div.innerHTML;
     }
 
+    function formatCoachingAdvice(advice) {
+        if (!advice) return '';
+
+        // Split advice by common separators and add line breaks
+        let formatted = advice
+            // Replace common separators with line breaks
+            .replace(/\s*[•⚡🔄📊💡]\s*/g, '\n• ')
+            // Ensure proper spacing
+            .replace(/\s+/g, ' ')
+            // Add line breaks between sentences that start with different emojis
+            .replace(/([^\n])([⚡🔄📊💡])/g, '$1\n$2')
+            // Clean up multiple line breaks
+            .replace(/\n\s*\n/g, '\n');
+
+        // Convert line breaks to HTML breaks
+        return escapeHtml(formatted).replace(/\n/g, '<br>');
+    }
+
     function markdownToHtml(markdown) {
         if (!markdown) return '';
 
-        // Convert markdown to HTML
+        // Convert markdown to HTML with enhanced code formatting
         let html = markdown
             // Headers
             .replace(/^### (.*$)/gm, '<h3>$1</h3>')
@@ -363,12 +442,104 @@
             // Bold and italic
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
             .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            // Code blocks
-            .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+            // Code blocks with language detection and copy button
+            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+                const lang = language || 'text';
+                const escapedCode = escapeHtml(code.trim());
+                return `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-language">${lang}</span>
+                            <button class="copy-code-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                                    <path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/>
+                                    <path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <pre><code class="language-${lang}">${escapedCode}</code></pre>
+                    </div>
+                `;
+            })
             // Inline code
-            .replace(/`(.*?)`/g, '<code>$1</code>')
+            .replace(/`(.*?)`/g, '<code class="inline-code">$1</code>')
             // Links
             .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>')
+            // Line breaks
+            .replace(/\n/g, '<br>');
+
+        return html;
+    }
+
+    // Function to copy code to clipboard
+    function copyCodeToClipboard(button) {
+        const codeBlock = button.closest('.code-block');
+        const codeElement = codeBlock.querySelector('code');
+        const codeText = codeElement.textContent;
+
+        navigator.clipboard.writeText(codeText).then(() => {
+            // Show copied feedback
+            const originalTitle = button.title;
+            button.title = 'Copied!';
+            button.style.color = '#4CAF50';
+
+            setTimeout(() => {
+                button.title = originalTitle;
+                button.style.color = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy code:', err);
+        });
+    }
+
+    // Progressive markdown formatting for streaming
+    function progressiveMarkdownToHtml(markdown) {
+        if (!markdown) return '';
+
+        // Simple progressive formatting that works with partial content
+        let html = markdown
+            // Headers (only if complete)
+            .replace(/^### (.+)$/gm, (match, content) => {
+                return content.endsWith(' ') ? match : `<h3>${content}</h3>`;
+            })
+            .replace(/^## (.+)$/gm, (match, content) => {
+                return content.endsWith(' ') ? match : `<h2>${content}</h2>`;
+            })
+            .replace(/^# (.+)$/gm, (match, content) => {
+                return content.endsWith(' ') ? match : `<h1>${content}</h1>`;
+            })
+            // Bold and italic (progressive)
+            .replace(/\*\*([^*]*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*([^*]*?)\*/g, '<em>$1</em>')
+            // Code blocks (only complete ones)
+            .replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+                // Only format complete code blocks
+                if (code.includes('\n```') || !code.includes('```')) {
+                    const lang = language || 'text';
+                    const escapedCode = escapeHtml(code.trim());
+                    return `
+                        <div class="code-block">
+                            <div class="code-header">
+                                <span class="code-language">${lang}</span>
+                                <button class="copy-code-btn" onclick="copyCodeToClipboard(this)" title="Copy code">
+                                    <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor">
+                                        <path d="M10 1H4C3.4 1 3 1.4 3 2v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zM4 2h6v8H4V2z"/>
+                                        <path d="M11 4H5c-.6 0-1 .4-1 1v8c0 .6.4 1 1 1h6c.6 0 1-.4 1-1V5c0-.6-.4-1-1-1z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <pre><code class="language-${lang}">${escapedCode}</code></pre>
+                        </div>
+                    `;
+                }
+                return match;
+            })
+            // Inline code (progressive)
+            .replace(/`([^`]*?)`/g, '<code class="inline-code">$1</code>')
+            // Links (only complete ones)
+            .replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
+                return url.endsWith(' ') ? match : `<a href="${url}" target="_blank">${text}</a>`;
+            })
             // Line breaks
             .replace(/\n/g, '<br>');
 
@@ -426,11 +597,22 @@
                 sendBtn.disabled = true;
                 break;
 
-            case 'executionCompleted':
-                // Stop thinking animation
+            case 'streamingStarted':
+                // Stop thinking animation and start streaming
                 stopThinkingAnimation();
+                startStreamingResponse();
+                break;
 
-                // Add AI response to conversation
+            case 'streamingChunk':
+                // Update streaming response with new content
+                updateStreamingResponse(message.content, message.provider);
+                break;
+
+            case 'executionCompleted':
+                // Stop streaming and finalize the response
+                stopStreamingResponse();
+
+                // Add final AI response to conversation
                 addMessageToConversation('ai', message.response, message.provider);
 
                 updateMetrics({
@@ -454,7 +636,7 @@
 
             case 'coachingAdvice':
                 coachingSection.classList.remove('collapsed');
-                coachingContent.innerHTML = escapeHtml(message.advice);
+                coachingContent.innerHTML = formatCoachingAdvice(message.advice);
                 break;
 
             case 'settingsUpdated':
@@ -534,26 +716,151 @@
 
     function updateSettingsUI(settings) {
         // Update UI based on settings
-        // This would update routing mode, provider selection, etc.
+        console.log('Updating UI with settings:', settings);
 
-        // Update font size if specified
-        if (settings.fontSize) {
-            const messageContents = document.querySelectorAll('.message-content');
-            const coachingContent = document.querySelector('.coaching-content');
-            const textarea = document.getElementById('prompt-input');
+        // Apply font family and size to entire interface
+        const baseFontFamily = settings.commandBarFontFamily || 'var(--vscode-editor-font-family)';
+        const baseFontSize = settings.commandBarFontSize || 13;
 
-            messageContents.forEach(content => {
-                content.style.fontSize = settings.fontSize + 'px';
-            });
+        // Apply to main container
+        const commandBar = document.querySelector('.ai-command-bar');
+        if (commandBar) {
+            commandBar.style.fontFamily = baseFontFamily;
+            commandBar.style.fontSize = baseFontSize + 'px';
+        }
 
-            if (coachingContent) {
-                coachingContent.style.fontSize = settings.fontSize + 'px';
-            }
+        // Apply to specific elements
+        const messageContents = document.querySelectorAll('.message-content');
+        const coachingContent = document.querySelector('.coaching-content');
+        const textarea = document.getElementById('prompt-input');
+        const dropdowns = document.querySelectorAll('.compact-select');
+        const sessionTabs = document.querySelectorAll('.session-tab');
+        const metrics = document.querySelectorAll('.metric-value, .metric-label');
 
-            if (textarea) {
-                textarea.style.fontSize = settings.fontSize + 'px';
+        // Apply to all message content
+        messageContents.forEach(content => {
+            content.style.fontFamily = baseFontFamily;
+            content.style.fontSize = baseFontSize + 'px';
+        });
+
+        // Apply to coaching content
+        if (coachingContent) {
+            coachingContent.style.fontFamily = baseFontFamily;
+            coachingContent.style.fontSize = baseFontSize + 'px';
+        }
+
+        // Apply to textarea
+        if (textarea) {
+            textarea.style.fontFamily = baseFontFamily;
+            textarea.style.fontSize = baseFontSize + 'px';
+        }
+
+        // Apply to dropdowns
+        dropdowns.forEach(dropdown => {
+            dropdown.style.fontFamily = baseFontFamily;
+            dropdown.style.fontSize = (baseFontSize - 2) + 'px'; // Slightly smaller for compactness
+        });
+
+        // Apply to session tabs
+        sessionTabs.forEach(tab => {
+            tab.style.fontFamily = baseFontFamily;
+            tab.style.fontSize = (baseFontSize - 1) + 'px';
+        });
+
+        // Apply to metrics
+        metrics.forEach(metric => {
+            metric.style.fontFamily = baseFontFamily;
+            metric.style.fontSize = (baseFontSize - 4) + 'px';
+        });
+
+        // Update default selections
+        if (settings.defaultEngine) {
+            const engineSelect = document.getElementById('engine-select');
+            if (engineSelect) {
+                engineSelect.value = settings.defaultEngine;
             }
         }
+
+        if (settings.defaultTaskType) {
+            const taskSelect = document.getElementById('task-select');
+            if (taskSelect) {
+                taskSelect.value = settings.defaultTaskType;
+            }
+        }
+
+        if (settings.defaultMode) {
+            const modeSelect = document.getElementById('mode-select');
+            if (modeSelect) {
+                modeSelect.value = settings.defaultMode;
+            }
+        }
+
+        // Apply accent color
+        if (settings.accentColor) {
+            const accentColor = settings.accentColor;
+            document.documentElement.style.setProperty('--accent-color', accentColor);
+
+            // Convert hex to RGB for rgba usage
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                } : null;
+            };
+
+            const rgb = hexToRgb(accentColor);
+            if (rgb) {
+                document.documentElement.style.setProperty('--accent-color-rgb', `${rgb.r}, ${rgb.g}, ${rgb.b}`);
+            }
+
+            // Update send button and active states
+            const sendBtn = document.getElementById('send-btn');
+            if (sendBtn) {
+                sendBtn.style.backgroundColor = accentColor;
+            }
+
+            const activeTabs = document.querySelectorAll('.session-tab.active');
+            activeTabs.forEach(tab => {
+                tab.style.borderBottomColor = accentColor;
+            });
+        }
+
+        // Toggle metrics visibility
+        const metricsSection = document.querySelector('.metrics-section');
+        if (metricsSection) {
+            metricsSection.style.display = settings.showMetrics ? 'flex' : 'none';
+        }
+
+        // Toggle coach visibility
+        const coachSection = document.getElementById('coaching-section');
+        if (coachSection) {
+            coachSection.style.display = settings.coachEnabled ? 'block' : 'none';
+
+            // Set initial collapse state
+            if (settings.coachCollapsedByDefault && !coachSection.classList.contains('collapsed')) {
+                coachSection.classList.add('collapsed');
+            } else if (!settings.coachCollapsedByDefault && coachSection.classList.contains('collapsed')) {
+                coachSection.classList.remove('collapsed');
+            }
+        }
+
+        // Toggle session tabs
+        const sessionTabsContainer = document.querySelector('.session-tabs-container');
+        if (sessionTabsContainer) {
+            sessionTabsContainer.style.display = settings.sessionTabsEnabled ? 'flex' : 'none';
+        }
+
+        // Toggle auto-expand textarea
+        const textareaWrapper = document.querySelector('.text-input-wrapper');
+        if (textareaWrapper && settings.autoExpandTextarea === false) {
+            textarea.style.resize = 'none';
+            textarea.style.overflow = 'hidden';
+        }
+
+        // Store settings for later use
+        window.aiCommandBarSettings = settings;
     }
 
     // Session Management Functions
