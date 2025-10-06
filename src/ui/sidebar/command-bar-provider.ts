@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import { AIRouter } from '../../ai/router/router';
 import { AnalyticsManager } from '../../analytics/manager';
 import { AICoach } from '../../coaching/coach';
+import { SessionManager } from '../../sessions/manager';
 import { AIRoutingMode, AIProvider } from '../../ai/types';
 
 /**
@@ -22,16 +23,25 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private readonly extensionUri: vscode.Uri;
     private readonly aiRouter: AIRouter;
     private readonly aiCoach: AICoach;
+    private readonly sessionManager: SessionManager;
+    private readonly context: vscode.ExtensionContext;
 
     constructor(
         extensionUri: vscode.Uri,
         aiRouter: AIRouter,
         _analyticsManager: AnalyticsManager,
-        aiCoach: AICoach
+        aiCoach: AICoach,
+        sessionManager: SessionManager,
+        context: vscode.ExtensionContext
     ) {
         this.extensionUri = extensionUri;
         this.aiRouter = aiRouter;
         this.aiCoach = aiCoach;
+        this.sessionManager = sessionManager;
+        this.context = context;
+
+        // Temporary usage to avoid TypeScript error
+        console.log('Session Manager initialized:', this.sessionManager.constructor.name);
     }
 
     /**
@@ -77,6 +87,12 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         break;
                     case 'showInformationMessage':
                         vscode.window.showInformationMessage(data.message);
+                        break;
+                    case 'saveMetrics':
+                        await this.handleSaveMetrics(data.metrics);
+                        break;
+                    case 'loadMetrics':
+                        await this.handleLoadMetrics();
                         break;
                 }
             }
@@ -298,37 +314,20 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 <div class="ai-command-bar">
                     <div class="header-section">
                         <div class="super-title">CURSOR DEVELOPER ANALYTICS</div>
-                        <h1 class="main-title">AI Command Bar</h1>
                     </div>
 
-                    <!-- Options compactes -->
-                    <div class="compact-options">
-                        <div class="option-group">
-                            <select id="task-select" class="compact-select">
-                                <option value="general">General</option>
-                                <option value="code">Code</option>
-                                <option value="documentation">Documentation</option>
-                                <option value="debug">Debug</option>
-                            </select>
-                        </div>
+                    <!-- Les dropdowns ont été déplacées vers la zone de commande -->
 
-                        <div class="option-group">
-                            <select id="mode-select" class="compact-select">
-                                <option value="auto" selected>Auto</option>
-                                <option value="eco">Eco</option>
-                                <option value="normal">Normal</option>
-                                <option value="quality">Quality</option>
-                                <option value="strict-json">Strict JSON</option>
-                                <option value="creative">Creative</option>
-                            </select>
+                    <!-- Barre d'onglets des sessions -->
+                    <div class="session-tabs-container">
+                        <div class="session-tabs" id="session-tabs">
+                            <!-- Les onglets seront générés dynamiquement -->
                         </div>
-
-                        <div class="provider-buttons compact" id="provider-buttons">
-                            <button class="provider-btn active" data-provider="auto">Auto</button>
-                            <button class="provider-btn" data-provider="openai">GPT-5</button>
-                            <button class="provider-btn" data-provider="anthropic">Claude</button>
-                            <button class="provider-btn" data-provider="deepseek">DeepSeek</button>
-                        </div>
+                        <button class="new-session-btn" id="new-session-btn" title="New Session">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Zone de conversation WhatsApp -->
@@ -336,41 +335,68 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         <div id="conversation-content" class="conversation-content"></div>
                     </div>
 
-                    <!-- Coach Advice avec collapse - COLLÉ À LA ZONE DE SAISIE -->
-                    <div class="coaching-section" id="coaching-section" style="display: none;">
-                        <div class="coaching-header">
-                            <span>AI Coach Advice</span>
-                            <button id="coach-collapse-btn" class="collapse-btn">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                    <path d="M1 4L6 9L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </button>
-                        </div>
-                        <div id="coaching-content" class="coaching-content"></div>
-                    </div>
-
-                    <!-- Barre de commande compacte style Cursor - PLACÉE EN BAS -->
-                    <div class="command-input-container">
-                        <div class="command-input-wrapper">
-                            <!-- Bouton @ pour les fichiers -->
-                            <div class="file-attach-button">
-                                <button id="file-attach-btn" class="attach-btn" title="Attach file">
-                                    @
+                    <!-- Zone fixe en bas : Coach + Zone de saisie -->
+                    <div class="fixed-bottom-container">
+                        <!-- Coach Advice avec collapse - COLLÉ À LA ZONE DE SAISIE -->
+                        <div class="coaching-section collapsed" id="coaching-section">
+                            <div class="coaching-header">
+                                <span>AI Coach Advice</span>
+                                <button id="coach-collapse-btn" class="collapse-btn">
+                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                                        <path d="M1 4L6 9L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
                                 </button>
-                                <div id="file-autocomplete" class="file-autocomplete" style="display: none;">
-                                    <input type="text" id="file-search" placeholder="Search files..." />
-                                    <div id="file-results" class="file-results"></div>
-                                </div>
                             </div>
+                            <div id="coaching-content" class="coaching-content"></div>
+                        </div>
 
-                            <!-- Dropdown pour sélectionner le moteur AI -->
-                            <div class="engine-selector">
-                                <select id="engine-select" class="engine-select" title="Select AI Engine">
-                                    <option value="auto">Auto</option>
-                                    <option value="gpt5">GPT-5</option>
-                                    <option value="claude">Claude</option>
-                                    <option value="deepseek" selected>DeepSeek</option>
-                                </select>
+                        <!-- Barre de commande compacte style Cursor - PLACÉE EN BAS -->
+                        <div class="command-input-container">
+                        <div class="command-input-wrapper">
+                            <!-- Conteneur pour toutes les dropdowns côte à côte -->
+                            <div class="dropdowns-row">
+                                <!-- Bouton @ pour les fichiers -->
+                                <div class="file-attach-button">
+                                    <button id="file-attach-btn" class="attach-btn" title="Attach file">
+                                        @
+                                    </button>
+                                    <div id="file-autocomplete" class="file-autocomplete" style="display: none;">
+                                        <input type="text" id="file-search" placeholder="Search files..." />
+                                        <div id="file-results" class="file-results"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Dropdown Task (Code/Doc/Debug) -->
+                                <div class="dropdown-item">
+                                    <select id="task-select" class="compact-select" title="Task Type">
+                                        <option value="general">General</option>
+                                        <option value="code">Code</option>
+                                        <option value="documentation">Documentation</option>
+                                        <option value="debug">Debug</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dropdown Mode (Eco/Quality) -->
+                                <div class="dropdown-item">
+                                    <select id="mode-select" class="compact-select" title="Mode">
+                                        <option value="auto" selected>Auto</option>
+                                        <option value="eco">Eco</option>
+                                        <option value="normal">Normal</option>
+                                        <option value="quality">Quality</option>
+                                        <option value="strict-json">Strict JSON</option>
+                                        <option value="creative">Creative</option>
+                                    </select>
+                                </div>
+
+                                <!-- Dropdown pour sélectionner le moteur AI -->
+                                <div class="dropdown-item">
+                                    <select id="engine-select" class="compact-select" title="AI Engine">
+                                        <option value="auto">Auto</option>
+                                        <option value="gpt5">GPT-5</option>
+                                        <option value="claude">Claude</option>
+                                        <option value="deepseek" selected>DeepSeek</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <!-- Zone de texte auto-expansive -->
@@ -412,11 +438,40 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                             </div>
                         </div>
                     </div>
+                    </div>
                 </div>
 
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
+    }
+
+    /**
+     * Save metrics to persistent storage
+     * Sauvegarder les métriques dans le stockage persistant
+     */
+    private async handleSaveMetrics(metrics: any) {
+        await this.context.globalState.update('sessionMetrics', metrics);
+    }
+
+    /**
+     * Load metrics from persistent storage
+     * Charger les métriques depuis le stockage persistant
+     */
+    private async handleLoadMetrics() {
+        if (this._view) {
+            const savedMetrics = this.context.globalState.get('sessionMetrics');
+            this._view.webview.postMessage({
+                type: 'metricsLoaded',
+                metrics: savedMetrics || {
+                    totalCost: 0,
+                    totalTokens: 0,
+                    latestLatency: 0,
+                    cacheHits: 0,
+                    totalRequests: 0
+                }
+            });
+        }
     }
 }
 

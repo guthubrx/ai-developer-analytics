@@ -17,11 +17,20 @@
     const coachingSection = document.getElementById('coaching-section');
     const coachingContent = document.getElementById('coaching-content');
     const coachCollapseBtn = document.getElementById('coach-collapse-btn');
+    const sessionTabs = document.getElementById('session-tabs');
+    const newSessionBtn = document.getElementById('new-session-btn');
 
     // State
     let attachedFiles = [];
     let isFileAutocompleteOpen = false;
     let conversationHistory = [];
+    let thinkingAnimationInterval = null;
+    let thinkingMessageElement = null;
+
+    // Session management
+    let sessions = [];
+    let currentSessionId = null;
+    let sessionCounter = 1;
 
     // Session metrics
     let sessionMetrics = {
@@ -37,16 +46,29 @@
         initializeEventListeners();
         initializeAutoExpandTextarea();
         loadSettings();
+        loadMetricsFromStorage();
     });
 
     function initializeEventListeners() {
         // Send button
         sendBtn.addEventListener('click', handleSendMessage);
 
-        // Enter key to send (Ctrl+Enter or Cmd+Enter)
+        // Enter key to send, Shift+Enter for new line
         promptInput.addEventListener('keydown', (e) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 handleSendMessage();
+            }
+            // Shift+Enter allows new line (default behavior)
+        });
+
+        // Detect @ character to show file autocomplete
+        promptInput.addEventListener('input', (e) => {
+            const value = e.target.value;
+            const lastChar = value.slice(-1);
+
+            if (lastChar === '@' && !isFileAutocompleteOpen) {
+                openFileAutocomplete();
             }
         });
 
@@ -79,6 +101,14 @@
         if (coachCollapseBtn) {
             coachCollapseBtn.addEventListener('click', toggleCoachCollapse);
         }
+
+        // New session button
+        if (newSessionBtn) {
+            newSessionBtn.addEventListener('click', createNewSession);
+        }
+
+        // Initialize with first session
+        createNewSession();
     }
 
     function initializeAutoExpandTextarea() {
@@ -109,6 +139,9 @@
         promptInput.value = '';
         promptInput.style.height = '40px';
 
+        // Show thinking animation
+        showThinkingAnimation(selectedProvider);
+
         vscode.postMessage({
             type: 'executePrompt',
             prompt,
@@ -116,8 +149,56 @@
             provider: selectedProvider
         });
 
-        // Hide coaching section
-        coachingSection.style.display = 'none';
+        // Collapse coaching section
+        coachingSection.classList.add('collapsed');
+    }
+
+    function showThinkingAnimation(provider) {
+        // Create thinking message element
+        thinkingMessageElement = document.createElement('div');
+        thinkingMessageElement.className = 'message ai thinking';
+        thinkingMessageElement.id = 'thinking-message';
+
+        const timestamp = new Date().toLocaleTimeString();
+
+        thinkingMessageElement.innerHTML = `
+            <div class="message-content">
+                <span class="thinking-text">Thinking</span>
+                <span class="thinking-dots">.</span>
+            </div>
+            <div class="message-meta">
+                <span>${timestamp}</span>
+                <span>${provider}</span>
+            </div>
+        `;
+
+        conversationContent.appendChild(thinkingMessageElement);
+        scrollToBottom();
+
+        // Start animation
+        startThinkingAnimation();
+    }
+
+    function startThinkingAnimation() {
+        const dotsElement = thinkingMessageElement.querySelector('.thinking-dots');
+        let dotCount = 0;
+
+        thinkingAnimationInterval = setInterval(() => {
+            dotCount = (dotCount + 1) % 4;
+            dotsElement.textContent = '.'.repeat(dotCount);
+        }, 500); // Change dots every 500ms
+    }
+
+    function stopThinkingAnimation() {
+        if (thinkingAnimationInterval) {
+            clearInterval(thinkingAnimationInterval);
+            thinkingAnimationInterval = null;
+        }
+
+        if (thinkingMessageElement) {
+            thinkingMessageElement.remove();
+            thinkingMessageElement = null;
+        }
     }
 
     function addMessageToConversation(type, content, provider = null) {
@@ -302,6 +383,9 @@
                 break;
 
             case 'executionCompleted':
+                // Stop thinking animation
+                stopThinkingAnimation();
+
                 // Add AI response to conversation
                 addMessageToConversation('ai', message.response, message.provider);
 
@@ -316,13 +400,16 @@
                 break;
 
             case 'executionError':
+                // Stop thinking animation
+                stopThinkingAnimation();
+
                 // Add error message to conversation
                 addMessageToConversation('ai', `Error: ${message.error}`, 'error');
                 sendBtn.disabled = false;
                 break;
 
             case 'coachingAdvice':
-                coachingSection.style.display = 'block';
+                coachingSection.classList.remove('collapsed');
                 coachingContent.innerHTML = escapeHtml(message.advice);
                 break;
 
@@ -336,6 +423,21 @@
 
             case 'fileSearchResults':
                 displayFileResults(message.files);
+                break;
+
+            case 'metricsLoaded':
+                if (message.metrics) {
+                    sessionMetrics = { ...sessionMetrics, ...message.metrics };
+                    // Update UI with loaded metrics
+                    document.getElementById('cost-info').textContent = `$${sessionMetrics.totalCost.toFixed(6)}`;
+                    document.getElementById('tokens-info').textContent = sessionMetrics.totalTokens;
+                    document.getElementById('latency-info').textContent = `${(sessionMetrics.latestLatency / 1000).toFixed(2)}s`;
+
+                    const cacheHitRate = sessionMetrics.totalRequests > 0
+                        ? (sessionMetrics.cacheHits / sessionMetrics.totalRequests) * 100
+                        : 0;
+                    document.getElementById('cache-info').textContent = `${cacheHitRate.toFixed(0)}%`;
+                }
                 break;
         }
     });
@@ -368,6 +470,22 @@
             ? (sessionMetrics.cacheHits / sessionMetrics.totalRequests) * 100
             : 0;
         document.getElementById('cache-info').textContent = `${cacheHitRate.toFixed(0)}%`;
+
+        // Save metrics to persistent storage
+        saveMetricsToStorage();
+    }
+
+    function saveMetricsToStorage() {
+        vscode.postMessage({
+            type: 'saveMetrics',
+            metrics: sessionMetrics
+        });
+    }
+
+    function loadMetricsFromStorage() {
+        vscode.postMessage({
+            type: 'loadMetrics'
+        });
     }
 
     function updateSettingsUI(settings) {
@@ -393,5 +511,195 @@
             }
         }
     }
+
+    // Session Management Functions
+    function createNewSession() {
+        const sessionId = 'session-' + Date.now();
+        const sessionName = `Session ${sessionCounter++}`;
+
+        const session = {
+            id: sessionId,
+            name: sessionName,
+            conversation: [],
+            metrics: {
+                totalCost: 0,
+                totalTokens: 0,
+                latestLatency: 0,
+                cacheHits: 0,
+                totalRequests: 0
+            },
+            createdAt: new Date()
+        };
+
+        sessions.push(session);
+        currentSessionId = sessionId;
+
+        createSessionTab(session);
+        switchToSession(sessionId);
+
+        return session;
+    }
+
+    function createSessionTab(session) {
+        const tabElement = document.createElement('div');
+        tabElement.className = 'session-tab';
+        tabElement.dataset.sessionId = session.id;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = session.name;
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'session-tab-close';
+        closeBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><path d="M1 1L11 11M11 1L1 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+        closeBtn.title = 'Close session';
+
+        closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeSession(session.id);
+        });
+
+        tabElement.appendChild(nameSpan);
+        tabElement.appendChild(closeBtn);
+
+        tabElement.addEventListener('click', () => {
+            switchToSession(session.id);
+        });
+
+        sessionTabs.appendChild(tabElement);
+
+        // Set as active if it's the first session
+        if (sessions.length === 1) {
+            tabElement.classList.add('active');
+        }
+    }
+
+    function switchToSession(sessionId) {
+        // Update tab states
+        document.querySelectorAll('.session-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+
+        const activeTab = document.querySelector(`[data-session-id="${sessionId}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+
+        // Update current session
+        currentSessionId = sessionId;
+
+        // Clear current conversation
+        conversationContent.innerHTML = '';
+        conversationHistory = [];
+
+        // Load session conversation
+        const session = sessions.find(s => s.id === sessionId);
+        if (session && session.conversation.length > 0) {
+            session.conversation.forEach(msg => {
+                addMessageToConversation(msg.type, msg.content, msg.provider);
+            });
+        }
+
+        // Reset metrics display for this session
+        updateMetricsDisplay(session ? session.metrics : {
+            totalCost: 0,
+            totalTokens: 0,
+            latestLatency: 0,
+            cacheHits: 0,
+            totalRequests: 0
+        });
+    }
+
+    function closeSession(sessionId) {
+        if (sessions.length <= 1) {
+            // Don't allow closing the last session
+            vscode.postMessage({
+                type: 'showInformationMessage',
+                message: 'Cannot close the last session'
+            });
+            return;
+        }
+
+        const sessionIndex = sessions.findIndex(s => s.id === sessionId);
+        if (sessionIndex !== -1) {
+            sessions.splice(sessionIndex, 1);
+
+            // Remove tab
+            const tab = document.querySelector(`[data-session-id="${sessionId}"]`);
+            if (tab) {
+                tab.remove();
+            }
+
+            // If we closed the current session, switch to another one
+            if (currentSessionId === sessionId) {
+                const nextSession = sessions[0];
+                if (nextSession) {
+                    switchToSession(nextSession.id);
+                }
+            }
+        }
+    }
+
+    function updateMetricsDisplay(metrics) {
+        document.getElementById('cost-info').textContent = `$${metrics.totalCost.toFixed(6)}`;
+        document.getElementById('tokens-info').textContent = metrics.totalTokens;
+        document.getElementById('latency-info').textContent = `${(metrics.latestLatency / 1000).toFixed(2)}s`;
+
+        const cacheHitRate = metrics.totalRequests > 0
+            ? (metrics.cacheHits / metrics.totalRequests) * 100
+            : 0;
+        document.getElementById('cache-info').textContent = `${cacheHitRate.toFixed(0)}%`;
+    }
+
+    // Override the existing updateMetrics function to work with sessions
+    const originalUpdateMetrics = updateMetrics;
+    updateMetrics = function(metrics) {
+        // Update current session metrics
+        const currentSession = sessions.find(s => s.id === currentSessionId);
+        if (currentSession) {
+            if (metrics.cost !== undefined) {
+                currentSession.metrics.totalCost += metrics.cost;
+            }
+            if (metrics.tokens !== undefined) {
+                currentSession.metrics.totalTokens += metrics.tokens;
+            }
+            if (metrics.latency !== undefined) {
+                currentSession.metrics.latestLatency = metrics.latency;
+            }
+            if (metrics.cacheHit !== undefined) {
+                currentSession.metrics.totalRequests++;
+                if (metrics.cacheHit) {
+                    currentSession.metrics.cacheHits++;
+                }
+            }
+
+            // Update display with session metrics
+            updateMetricsDisplay(currentSession.metrics);
+        }
+
+        // Also update global session metrics for backward compatibility
+        originalUpdateMetrics(metrics);
+    };
+
+    // Override addMessageToConversation to store in current session
+    const originalAddMessageToConversation = addMessageToConversation;
+    addMessageToConversation = function(type, content, provider = null) {
+        const messageId = Date.now();
+        const timestamp = new Date().toLocaleTimeString();
+
+        // Store in current session
+        const currentSession = sessions.find(s => s.id === currentSessionId);
+        if (currentSession) {
+            currentSession.conversation.push({
+                id: messageId,
+                type,
+                content,
+                provider,
+                timestamp
+            });
+        }
+
+        // Call original function
+        originalAddMessageToConversation(type, content, provider);
+    };
 
 })();

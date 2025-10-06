@@ -16,6 +16,7 @@ import { AIDashboardProvider } from './ui/dashboards/dashboard-provider';
 import { AICoachProvider } from './ui/dashboards/coach-provider';
 import { registerDeepSeekTestCommand } from './test/deepseek-manual-test';
 import { MCPManager } from './mcp/mcp-manager';
+import { SessionManager } from './sessions/manager';
 
 /**
  * Extension activation function
@@ -35,6 +36,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const aiCoach = new AICoach(analyticsManager, aiRouter);
     const hotReloadManager = new HotReloadManager(context);
     mcpManager = new MCPManager(context);
+    const sessionManager = new SessionManager(context);
 
     // Register webview providers
     // Enregistrer les fournisseurs de webview
@@ -42,7 +44,9 @@ export async function activate(context: vscode.ExtensionContext) {
         context.extensionUri,
         aiRouter,
         analyticsManager,
-        aiCoach
+        aiCoach,
+        sessionManager,
+        context
     );
 
     const dashboardProvider = new AIDashboardProvider(

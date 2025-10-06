@@ -2,11 +2,11 @@
 
 ## 📋 Vue d'ensemble
 
-Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le routage multi-niveaux, Ollama local, coaching adaptatif et serveur MCP local.
+Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le routage multi-niveaux, Ollama local, coaching adaptatif, gestion de sessions et serveur MCP local.
 
-**Statut actuel:** ✅ Architecture de base complète
-**Prochaine étape:** 🚀 Test dans VS Code
-**Nouvelle fonctionnalité:** 🧭 Serveur MCP local (planifié)
+**Statut actuel:** ✅ Extension fonctionnelle avec gestion de sessions
+**Prochaine étape:** 🚀 Tests avancés et améliorations UI
+**Nouvelle fonctionnalité:** ✅ Gestion de sessions avec métriques persistantes
 
 ## 🎯 Objectifs du Projet
 
@@ -16,16 +16,20 @@ Extension VS Code/Cursor pour l'analyse des développeurs avec IA, supportant le
 - [x] **Analytics SQLite** - Suivi des coûts, latence, stockage sécurisé
 - [x] **Sécurité** - CSP, SecretStorage, chiffrement AES
 - [x] **Hot Reload** - Développement rapide
+- [x] **Gestion de sessions** - Onglets multiples avec métriques persistantes
+- [x] **Interface command bar** - UI WhatsApp style avec onglets sticky
+- [x] **Animation thinking** - Points animés pendant l'exécution
+- [x] **Extracteur métriques Claude** - Analyse interface Claude Code
+- [x] **Serveur MCP local** - Structure implémentée avec outils fs et web
 - [ ] **Tests complets** - Extension dans VS Code
 - [ ] **UI Dashboard** - Composants d'interface utilisateur
 - [ ] **Scanner architecture** - Analyse automatique du code
-- [ ] **Serveur MCP local** - Outils filesystem et web search sécurisés
 
 ## 📁 Structure du Projet
 
 ```
 ai-developer-analytics-next-gen/
-├── server-mcp/                    # Serveur MCP local (NOUVEAU)
+├── server-mcp/                    # Serveur MCP local
 │   ├── src/
 │   │   ├── index.ts              # Serveur MCP principal
 │   │   ├── tools/                # Outils fs et web
@@ -41,9 +45,21 @@ ai-developer-analytics-next-gen/
 │   │   ├── manager.ts            # Gestionnaire SQLite
 │   │   └── models.ts             # Modèles de données
 │   ├── ui/
-│   │   └── webviews/             # Composants WebView
-│   ├── mcpClient.ts              # Client MCP (NOUVEAU)
-│   └── policies/                 # Gestion permissions (NOUVEAU)
+│   │   └── sidebar/              # Barre de commande IA
+│   │       └── command-bar-provider.ts
+│   ├── sessions/                 # Gestion de sessions (NOUVEAU)
+│   │   ├── manager.ts            # Gestionnaire sessions
+│   │   └── types.ts              # Types sessions et métriques
+│   ├── coaching/                 # Coach IA adaptatif
+│   ├── utils/                    # Utilitaires
+│   │   └── claude-metrics-extractor.js
+│   ├── mcpClient.ts              # Client MCP
+│   └── policies/                 # Gestion permissions
+├── media/                        # Assets UI
+│   ├── main.css                  # Styles command bar
+│   ├── main.js                   # JavaScript command bar
+│   ├── reset.css
+│   └── vscode.css
 ├── package.json                  # Configuration extension
 ├── tsconfig.json                 # Configuration TypeScript
 ├── test-deepseek-simple.js       # Test manuel DeepSeek
@@ -80,47 +96,56 @@ ai-developer-analytics-next-gen/
 - [x] Fichier de test manuel DeepSeek (`test-deepseek-simple.js`)
 - [x] Tests sans compilation TypeScript
 
-### 🧭 Architecture MCP (Planifiée)
-- [ ] **Serveur MCP** - Structure de base et outils core
-- [ ] **Sécurité MCP** - Workspace Trust et permissions
-- [ ] **Intégration** - Client et policies dans l'extension
+### 🗂️ Gestion de Sessions (NOUVEAU)
+- [x] **Architecture sessions** - Modèle de données complet avec métriques
+- [x] **Manager sessions** - CRUD avec persistance VS Code globalState
+- [x] **UI onglets** - Interface avec onglets sticky et création/fermeture
+- [x] **Métriques persistantes** - Tokens, coûts, cache conservés entre sessions
+- [x] **Conversations par session** - Historique séparé pour chaque onglet
+
+### 🎨 Interface Utilisateur (NOUVEAU)
+- [x] **Barre de commande** - Style WhatsApp avec zone de conversation
+- [x] **Onglets sticky** - Barre d'onglets toujours visible pendant le scroll
+- [x] **Animation thinking** - Points animés pendant l'exécution IA
+- [x] **Dropdowns compactes** - Sélection task, mode, engine
+- [x] **Coach advice** - Section collapsible pour conseils IA
+
+### 🔧 Utilitaires et Extraction (NOUVEAU)
+- [x] **Extracteur métriques Claude** - Analyse interface Claude Code
+- [x] **Format unifié** - Structure de données compatible Cursor/Claude
+- [x] **Tests manuels** - Validation extraction métriques
+
+### 🧭 Architecture MCP (IMPLÉMENTÉE)
+- [x] **Serveur MCP** - Structure complète avec outils fs et web
+- [x] **Sécurité MCP** - Workspace Trust et validation scope
+- [x] **Intégration** - Client et policies dans l'extension
+- [x] **Build MCP** - Configuration monorepo et compilation
 
 ## 🚀 Prochaines Étapes
 
-### Phase 1: Test Extension (Immédiat)
-1. **Compiler l'extension**
-   ```bash
-   npm run compile
-   ```
+### Phase 1: Tests et Améliorations UI (Immédiat)
+- [ ] **Tests complets VS Code** - Validation extension installée
+- [ ] **Améliorations UI** - Refinements interface utilisateur
+- [ ] **Tests sessions** - Validation gestion onglets multiples
+- [ ] **Tests métriques** - Vérification persistance données
 
-2. **Packager pour VS Code**
-   ```bash
-   npm run package
-   ```
+### Phase 2: Dashboard et Analytics
+- [ ] **Dashboard Ops Router** - Visualisation coûts et performance
+- [ ] **Dashboard BI Dev** - Analytics par projet
+- [ ] **Dashboard AI Coach** - Conseils personnalisés
+- [ ] **Visualisation métriques** - Graphiques et rapports
 
-3. **Tester dans VS Code**
-   - Installer l'extension `.vsix`
-   - Tester les commandes IA
-   - Vérifier l'interface utilisateur
-
-### Phase 2: Interface Utilisateur
-- [ ] Implémenter les dashboards WebView
-- [ ] Composant barre de commandes IA
-- [ ] Panneau de coaching adaptatif
-- [ ] Visualisation des métriques
-
-### Phase 3: Serveur MCP Local
-- [ ] **Configuration monorepo** - Workspaces et dépendances
-- [ ] **Serveur MCP core** - Outils fs et web search
-- [ ] **Intégration extension** - Client et policies
-- [ ] **Tests sécurité** - Validation scope et conformité
-- [ ] **Packaging** - Validation inclusion dist/ uniquement
+### Phase 3: Serveur MCP Local (AMÉLIORATIONS)
+- [ ] **Tests MCP avancés** - Validation outils fs et web
+- [ ] **Intégration extension** - Utilisation outils MCP
+- [ ] **Sécurité renforcée** - Validation permissions workspace
+- [ ] **Documentation MCP** - Guide utilisation serveur
 
 ### Phase 4: Fonctionnalités Avancées
-- [ ] Scanner d'architecture automatique
-- [ ] Recommandations de refactoring
-- [ ] Intégration CI/CD
-- [ ] Documentation utilisateur
+- [ ] **Scanner architecture** - Analyse automatique du code
+- [ ] **Recommandations refactoring** - Suggestions améliorations
+- [ ] **Intégration CI/CD** - Pipeline automatisation
+- [ ] **Documentation utilisateur** - Guide complet
 
 ## 🧪 Tests Disponibles
 
@@ -142,7 +167,7 @@ npm run test:watch    # Mode surveillance
 npm run e2e           # Tests Playwright
 ```
 
-### Tests MCP (Nouveaux)
+### Tests MCP
 ```bash
 npm run test:mcp      # Tests serveur MCP (Vitest)
 # Tests manuels MCP :
@@ -150,6 +175,16 @@ npm run test:mcp      # Tests serveur MCP (Vitest)
 # - Consentement → Prompt affiché
 # - Scope validation → Erreur OUT_OF_SCOPE
 # - Web search → Résultats normalisés
+```
+
+### Tests Sessions (NOUVEAU)
+```bash
+# Tests manuels sessions :
+# - Création onglets multiples
+# - Persistance métriques entre sessions
+# - Fermeture onglets (sauf dernier)
+# - Switch entre sessions
+# - Animation thinking pendant exécution
 ```
 
 ## 📊 Métriques de Suivi
@@ -161,18 +196,20 @@ npm run test:mcp      # Tests serveur MCP (Vitest)
 - **Performance MCP:** Latence outils fs et web
 - **Sécurité MCP:** Taux de refus OUT_OF_SCOPE
 - **Utilisation MCP:** Fréquence outils par type
+- **Sessions:** Nombre d'onglets actifs, durée moyenne
+- **Métriques persistantes:** Tokens, coûts, cache par session
+- **Animation thinking:** Temps moyen d'exécution
 
 ## 🔧 Développement
 
 ### Commandes Disponibles
 ```bash
-npm run compile       # Compilation TypeScript
+npm run compile       # Compilation TypeScript + MCP
 npm run watch         # Surveillance des changements
 npm run lint          # Vérification ESLint
 npm run package       # Création package .vsix
 npm run publish       # Publication (si configuré)
-# Nouvelles commandes MCP :
-npm run build:mcp     # Build serveur MCP
+npm run build:mcp     # Build serveur MCP uniquement
 npm run test:mcp      # Tests serveur MCP
 ```
 
@@ -184,6 +221,8 @@ npm run test:mcp      # Tests serveur MCP
 - **MCP:** `aiAnalytics.mcpEnabled` - Activation serveur MCP
 - **Scope MCP:** `aiAnalytics.mcpScopeToWorkspace` - Restriction workspace
 - **Dossiers MCP:** `aiAnalytics.mcpAdditionalDirectories` - Dossiers supplémentaires
+- **Engine par défaut:** `aiAnalytics.defaultEngine` - DeepSeek par défaut
+- **Métriques sessions:** Persistance automatique activée
 
 ## 🎯 Points Clés Réalisés
 
@@ -192,15 +231,18 @@ npm run test:mcp      # Tests serveur MCP
 3. **✅ Multi-providers** - 4 services IA supportés
 4. **✅ Analytics privés** - Stockage local chiffré
 5. **✅ Tests manuels** - Validation sans VS Code
-6. **🔄 Prêt pour VS Code** - Compilation et packaging restants
-7. **🧭 Serveur MCP planifié** - Architecture définie et prête pour implémentation
+6. **✅ Gestion sessions** - Onglets multiples avec métriques persistantes
+7. **✅ Interface utilisateur** - Barre de commande WhatsApp style
+8. **✅ Serveur MCP** - Structure complète implémentée
+9. **✅ Animation thinking** - Feedback visuel pendant exécution
+10. **✅ Extracteur métriques** - Compatibilité Claude Code
 
 ## 📞 Prochaines Actions
 
-L'extension est prête pour la phase de test dans VS Code. Les composants principaux sont fonctionnels et peuvent être compilés pour installation. Le serveur MCP local est planifié et prêt pour implémentation après validation de l'extension de base.
+L'extension est fonctionnelle avec toutes les fonctionnalités principales implémentées. Les sessions multiples, l'interface utilisateur et le serveur MCP sont opérationnels.
 
 **Actions recommandées:**
-1. **Immédiat:** Compiler et tester l'extension dans VS Code
-2. **Court terme:** Implémenter l'interface utilisateur (Phase 2)
-3. **Moyen terme:** Développer le serveur MCP local (Phase 3)
-4. **Long terme:** Fonctionnalités avancées et documentation (Phase 4)
+1. **Immédiat:** Tests approfondis dans VS Code
+2. **Court terme:** Améliorations UI et validation sessions
+3. **Moyen terme:** Dashboard analytics et visualisation
+4. **Long terme:** Scanner architecture et documentation
