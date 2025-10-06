@@ -38,13 +38,12 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* Session Tabs - Sticky positioning */
+/* Session Tabs - VS Code Style */
 .session-tabs-container {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     margin-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding-bottom: 8px;
+    border-bottom: 1px solid var(--vscode-panel-border);
     position: sticky;
     top: 0;
     background: var(--vscode-sideBar-background);
@@ -57,7 +56,6 @@ body {
     display: flex;
     flex: 1;
     overflow-x: auto;
-    gap: 4px;
 }
 
 .session-tab {
@@ -65,63 +63,68 @@ body {
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    font-size: 12px;
-    color: var(--vscode-foreground);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 13px;
+    color: var(--vscode-tab-inactiveForeground);
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
     min-width: 80px;
+    position: relative;
 }
 
 .session-tab:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--vscode-tab-activeForeground);
+    background: var(--vscode-tab-hoverBackground);
 }
 
 .session-tab.active {
-    background: rgba(91, 127, 237, 0.15);
-    border-color: rgba(91, 127, 237, 0.3);
-    color: #6B8FFF;
+    color: var(--vscode-tab-activeForeground);
+    background: var(--vscode-tab-activeBackground);
+    border-bottom-color: var(--vscode-tab-activeBorder);
 }
 
 .session-tab-close {
     background: none;
     border: none;
-    color: #888;
+    color: var(--vscode-tab-inactiveForeground);
     cursor: pointer;
     padding: 2px;
-    border-radius: 3px;
+    border-radius: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
+    opacity: 0.7;
+    width: 16px;
+    height: 16px;
 }
 
 .session-tab-close:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: var(--vscode-foreground);
+    background: var(--vscode-toolbar-hoverBackground);
+    color: var(--vscode-tab-activeForeground);
+    opacity: 1;
 }
 
 .new-session-btn {
-    background: rgba(91, 127, 237, 0.1);
-    border: 1px solid rgba(91, 127, 237, 0.2);
-    border-radius: 6px;
-    color: #6B8FFF;
+    background: var(--vscode-button-secondaryBackground);
+    border: 1px solid var(--vscode-button-secondaryBorder);
+    border-radius: 3px;
+    color: var(--vscode-button-secondaryForeground);
     cursor: pointer;
-    padding: 6px;
+    padding: 6px 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     margin-left: 8px;
+    font-size: 12px;
 }
 
 .new-session-btn:hover {
-    background: rgba(91, 127, 237, 0.2);
-    border-color: rgba(91, 127, 237, 0.3);
+    background: var(--vscode-button-secondaryHoverBackground);
 }
 
 /* Nouvelle barre de commande compacte style Cursor */

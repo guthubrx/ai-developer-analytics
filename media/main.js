@@ -258,10 +258,54 @@
         fileSearch.focus();
         isFileAutocompleteOpen = true;
 
+        // Position the autocomplete based on context
+        positionFileAutocomplete();
+
         // Load initial file list
         vscode.postMessage({
             type: 'getProjectFiles'
         });
+    }
+
+    function positionFileAutocomplete() {
+        // Get cursor position in textarea
+        const cursorPosition = promptInput.selectionStart;
+        const textBeforeCursor = promptInput.value.substring(0, cursorPosition);
+
+        // Check if we're positioning relative to @ character in text
+        const lastAtPos = textBeforeCursor.lastIndexOf('@');
+
+        if (lastAtPos !== -1 && lastAtPos === cursorPosition - 1) {
+            // Position relative to @ character in text
+            positionAutocompleteAtCharacter(lastAtPos);
+        } else {
+            // Position relative to @ button
+            positionAutocompleteAtButton();
+        }
+    }
+
+    function positionAutocompleteAtCharacter(atPosition) {
+        // Try to position near the @ character in text
+        // This is a simplified approach - in a real implementation
+        // we'd need to calculate exact text cursor coordinates
+
+        // For now, position above the text input area
+        const textInputRect = promptInput.getBoundingClientRect();
+        const commandInputRect = document.querySelector('.command-input-wrapper').getBoundingClientRect();
+
+        fileAutocomplete.style.bottom = '100%';
+        fileAutocomplete.style.top = 'auto';
+        fileAutocomplete.style.left = '0';
+        fileAutocomplete.style.right = 'auto';
+        fileAutocomplete.style.width = '300px';
+    }
+
+    function positionAutocompleteAtButton() {
+        // Position above the @ button
+        fileAutocomplete.style.bottom = '100%';
+        fileAutocomplete.style.top = 'auto';
+        fileAutocomplete.style.left = '0';
+        fileAutocomplete.style.right = 'auto';
     }
 
     function closeFileAutocomplete() {
