@@ -206,6 +206,14 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             // New configurable settings
             commandBarFontFamily: config.get('commandBarFontFamily'),
             commandBarFontSize: config.get('commandBarFontSize'),
+            chatFontSize: config.get('chatFontSize'),
+            aiResponseFontSize: config.get('aiResponseFontSize'),
+            codeBlockFontSize: config.get('codeBlockFontSize'),
+            inlineCodeFontSize: config.get('inlineCodeFontSize'),
+            inputFontSize: config.get('inputFontSize'),
+            dropdownFontSize: config.get('dropdownFontSize'),
+            coachFontSize: config.get('coachFontSize'),
+            metricsFontSize: config.get('metricsFontSize'),
             defaultEngine: config.get('defaultEngine'),
             defaultTaskType: config.get('defaultTaskType'),
             defaultMode: config.get('defaultMode'),
@@ -369,25 +377,48 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     <!-- Les dropdowns ont été déplacées vers la zone de commande -->
 
                     <!-- Barre d'onglets des sessions -->
-                    <div class="session-tabs-container">
-                        <div class="session-tabs" id="session-tabs">
-                            <!-- Les onglets seront générés dynamiquement -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M2 3h12c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V4c0-.6.4-1 1-1z"/>
+                                    <path d="M4 6h8M4 8h6M4 10h4"/>
+                                </svg>
+                                Sessions
+                            </div>
                         </div>
-                        <button class="new-session-btn" id="new-session-btn" title="New Session">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                            </svg>
-                        </button>
+                        <div class="session-tabs-container">
+                            <div class="session-tabs" id="session-tabs">
+                                <!-- Les onglets seront générés dynamiquement -->
+                            </div>
+                            <button class="action-btn" id="new-session-btn" title="New Session">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Zone de conversation WhatsApp -->
-                    <div class="conversation-container" id="conversation-container">
-                        <div id="conversation-content" class="conversation-content"></div>
+                    <!-- Zone de conversation moderne -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                    <path d="M8 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z"/>
+                                    <path d="M8 12c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4z"/>
+                                    <path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4z"/>
+                                </svg>
+                                Conversation
+                            </div>
+                        </div>
+                        <div class="conversation-container" id="conversation-container">
+                            <div id="conversation-content" class="conversation-content"></div>
+                        </div>
                     </div>
 
                     <!-- Zone fixe en bas : Coach + Zone de saisie -->
                     <div class="fixed-bottom-container">
-                        <!-- Coach Advice avec collapse - COLLÉ À LA ZONE DE SAISIE -->
+                        <!-- Coach Advice avec collapse -->
                         <div class="coaching-section collapsed" id="coaching-section">
                             <div class="coaching-header">
                                 <span>AI Coach Advice</span>
@@ -400,92 +431,89 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                             <div id="coaching-content" class="coaching-content"></div>
                         </div>
 
-                        <!-- Barre de commande compacte style Cursor - PLACÉE EN BAS -->
-                        <div class="command-input-container">
-                        <div class="command-input-wrapper">
-                            <!-- Conteneur pour toutes les dropdowns côte à côte -->
-                            <div class="dropdowns-row">
-                                <!-- Bouton @ pour les fichiers -->
-                                <div class="file-attach-button">
-                                    <button id="file-attach-btn" class="attach-btn" title="Attach file">
-                                        @
-                                    </button>
-                                    <div id="file-autocomplete" class="file-autocomplete" style="display: none;">
-                                        <input type="text" id="file-search" placeholder="Search files..." />
-                                        <div id="file-results" class="file-results"></div>
+                        <!-- Barre de commande compacte -->
+                        <div class="card command-input-container">
+                            <div class="command-input-wrapper">
+                                <!-- Conteneur pour toutes les dropdowns côte à côte -->
+                                <div class="controls-row">
+                                    <div class="control-group">
+                                        <!-- Bouton @ pour les fichiers -->
+                                        <button id="file-attach-btn" class="action-btn" title="Attach file">
+                                            @
+                                        </button>
+
+                                        <!-- Dropdown Task (Code/Doc/Debug) -->
+                                        <select id="task-select" class="compact-select" title="Task Type">
+                                            <option value="general">General</option>
+                                            <option value="code">Code</option>
+                                            <option value="documentation">Documentation</option>
+                                            <option value="debug">Debug</option>
+                                        </select>
+
+                                        <!-- Dropdown Mode (Eco/Quality) -->
+                                        <select id="mode-select" class="compact-select" title="Mode">
+                                            <option value="auto" selected>Auto</option>
+                                            <option value="eco">Eco</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="quality">Quality</option>
+                                            <option value="strict-json">Strict JSON</option>
+                                            <option value="creative">Creative</option>
+                                        </select>
+
+                                        <!-- Dropdown pour sélectionner le moteur AI -->
+                                        <select id="engine-select" class="compact-select" title="AI Engine">
+                                            <option value="auto">Auto</option>
+                                            <option value="gpt5">GPT-5</option>
+                                            <option value="claude">Claude</option>
+                                            <option value="deepseek" selected>DeepSeek</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <!-- Dropdown Task (Code/Doc/Debug) -->
-                                <div class="dropdown-item">
-                                    <select id="task-select" class="compact-select" title="Task Type">
-                                        <option value="general">General</option>
-                                        <option value="code">Code</option>
-                                        <option value="documentation">Documentation</option>
-                                        <option value="debug">Debug</option>
-                                    </select>
+                                <!-- Zone de texte auto-expansive -->
+                                <div class="text-input-wrapper">
+                                    <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>
                                 </div>
 
-                                <!-- Dropdown Mode (Eco/Quality) -->
-                                <div class="dropdown-item">
-                                    <select id="mode-select" class="compact-select" title="Mode">
-                                        <option value="auto" selected>Auto</option>
-                                        <option value="eco">Eco</option>
-                                        <option value="normal">Normal</option>
-                                        <option value="quality">Quality</option>
-                                        <option value="strict-json">Strict JSON</option>
-                                        <option value="creative">Creative</option>
-                                    </select>
-                                </div>
-
-                                <!-- Dropdown pour sélectionner le moteur AI -->
-                                <div class="dropdown-item">
-                                    <select id="engine-select" class="compact-select" title="AI Engine">
-                                        <option value="auto">Auto</option>
-                                        <option value="gpt5">GPT-5</option>
-                                        <option value="claude">Claude</option>
-                                        <option value="deepseek" selected>DeepSeek</option>
-                                    </select>
+                                <!-- Actions en bas -->
+                                <div class="input-actions">
+                                    <button id="image-attach-btn" class="action-btn" title="Attach image">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M14.5 3h-13C.7 3 0 3.7 0 4.5v7c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5v-7c0-.8-.7-1.5-1.5-1.5zM1.5 4h13c.3 0 .5.2.5.5v4.8l-2.3-2.3c-.2-.2-.5-.2-.7 0L9 9.3 6.5 6.8c-.2-.2-.5-.2-.7 0L2 10.6V4.5c0-.3.2-.5.5-.5z"/>
+                                        </svg>
+                                    </button>
+                                    <button id="send-btn" class="send-btn" title="Send message">
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                            <path d="M15.7 7.3l-7-7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4L7.6 7H1c-.6 0-1 .4-1 1s.4 1 1 1h6.6L7.3 14.3c-.4.4-.4 1 0 1.4.2.2.5.3.7.3s.5-.1.7-.3l7-7c.4-.4.4-1 0-1.4z"/>
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- Zone de texte auto-expansive -->
-                            <div class="text-input-wrapper">
-                                <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>
-                            </div>
-
-                            <!-- Actions en bas -->
-                            <div class="input-actions">
-                                <button id="image-attach-btn" class="action-btn" title="Attach image">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M14.5 3h-13C.7 3 0 3.7 0 4.5v7c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5v-7c0-.8-.7-1.5-1.5-1.5zM1.5 4h13c.3 0 .5.2.5.5v4.8l-2.3-2.3c-.2-.2-.5-.2-.7 0L9 9.3 6.5 6.8c-.2-.2-.5-.2-.7 0L2 10.6V4.5c0-.3.2-.5.5-.5z"/>
-                                    </svg>
-                                </button>
-                                <button id="send-btn" class="action-btn send-btn" title="Send message">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M15.7 7.3l-7-7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4L7.6 7H1c-.6 0-1 .4-1 1s.4 1 1 1h6.6L7.3 14.3c-.4.4-.4 1 0 1.4.2.2.5.3.7.3s.5-.1.7-.3l7-7c.4-.4.4-1 0-1.4z"/>
-                                    </svg>
-                                </button>
+                            <!-- Métriques compactes -->
+                            <div class="metrics-section">
+                                <div class="metric-item">
+                                    <span class="metric-label">Cost</span>
+                                    <span id="cost-info" class="metric-value">$0.00</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Tokens</span>
+                                    <span id="tokens-info" class="metric-value">0</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span id="latency-info" class="metric-value">0s</span>
+                                </div>
+                                <div class="metric-item">
+                                    <span class="metric-label">Cache</span>
+                                    <span id="cache-info" class="metric-value">0%</span>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Métriques compactes - PLACÉES SOUS LA ZONE DE SAISIE -->
-                        <div class="metrics-section">
-                            <div class="metric-item">
-                                <span class="metric-label">Cost</span>
-                                <span id="cost-info" class="metric-value">$0.00</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-label">Tokens</span>
-                                <span id="tokens-info" class="metric-value">0</span>
-                            </div>
-                            <div class="metric-item">
-                                <span id="latency-info" class="metric-value">0s</span>
-                            </div>
-                            <div class="metric-item">
-                                <span class="metric-label">Cache</span>
-                                <span id="cache-info" class="metric-value">0%</span>
-                            </div>
+                        <!-- File autocomplete -->
+                        <div id="file-autocomplete" class="file-autocomplete" style="display: none;">
+                            <input type="text" id="file-search" placeholder="Search files..." />
+                            <div id="file-results" class="file-results"></div>
                         </div>
                     </div>
                     </div>

@@ -718,59 +718,87 @@
         // Update UI based on settings
         console.log('Updating UI with settings:', settings);
 
-        // Apply font family and size to entire interface
+        // Apply font family to entire interface
         const baseFontFamily = settings.commandBarFontFamily || 'var(--vscode-editor-font-family)';
-        const baseFontSize = settings.commandBarFontSize || 13;
+
+        // Get individual font sizes with fallbacks
+        const chatFontSize = settings.chatFontSize || settings.commandBarFontSize || 13;
+        const aiResponseFontSize = settings.aiResponseFontSize || settings.chatFontSize || settings.commandBarFontSize || 13;
+        const codeBlockFontSize = settings.codeBlockFontSize || 12;
+        const inlineCodeFontSize = settings.inlineCodeFontSize || 12;
+        const inputFontSize = settings.inputFontSize || 14;
+        const dropdownFontSize = settings.dropdownFontSize || 11;
+        const coachFontSize = settings.coachFontSize || settings.commandBarFontSize || 13;
+        const metricsFontSize = settings.metricsFontSize || 9;
 
         // Apply to main container
         const commandBar = document.querySelector('.ai-command-bar');
         if (commandBar) {
             commandBar.style.fontFamily = baseFontFamily;
-            commandBar.style.fontSize = baseFontSize + 'px';
         }
 
-        // Apply to specific elements
-        const messageContents = document.querySelectorAll('.message-content');
-        const coachingContent = document.querySelector('.coaching-content');
+        // Apply font family to all text elements
+        const allTextElements = document.querySelectorAll('*');
+        allTextElements.forEach(element => {
+            if (getComputedStyle(element).fontFamily !== 'monospace') {
+                element.style.fontFamily = baseFontFamily;
+            }
+        });
+
+        // Apply specific font sizes to different zones
+
+        // Chat messages (user and AI)
+        const userMessages = document.querySelectorAll('.message.user .message-content');
+        const aiMessages = document.querySelectorAll('.message.ai .message-content');
+
+        userMessages.forEach(content => {
+            content.style.fontSize = chatFontSize + 'px';
+        });
+
+        aiMessages.forEach(content => {
+            content.style.fontSize = aiResponseFontSize + 'px';
+        });
+
+        // Code blocks and quoted text
+        const codeBlocks = document.querySelectorAll('.code-block pre, .code-block code');
+        codeBlocks.forEach(code => {
+            code.style.fontSize = codeBlockFontSize + 'px';
+        });
+
+        // Inline code
+        const inlineCodes = document.querySelectorAll('.inline-code');
+        inlineCodes.forEach(code => {
+            code.style.fontSize = inlineCodeFontSize + 'px';
+        });
+
+        // Input textarea
         const textarea = document.getElementById('prompt-input');
-        const dropdowns = document.querySelectorAll('.compact-select');
-        const sessionTabs = document.querySelectorAll('.session-tab');
-        const metrics = document.querySelectorAll('.metric-value, .metric-label');
-
-        // Apply to all message content
-        messageContents.forEach(content => {
-            content.style.fontFamily = baseFontFamily;
-            content.style.fontSize = baseFontSize + 'px';
-        });
-
-        // Apply to coaching content
-        if (coachingContent) {
-            coachingContent.style.fontFamily = baseFontFamily;
-            coachingContent.style.fontSize = baseFontSize + 'px';
-        }
-
-        // Apply to textarea
         if (textarea) {
-            textarea.style.fontFamily = baseFontFamily;
-            textarea.style.fontSize = baseFontSize + 'px';
+            textarea.style.fontSize = inputFontSize + 'px';
         }
 
-        // Apply to dropdowns
+        // Dropdown menus
+        const dropdowns = document.querySelectorAll('.compact-select');
         dropdowns.forEach(dropdown => {
-            dropdown.style.fontFamily = baseFontFamily;
-            dropdown.style.fontSize = (baseFontSize - 2) + 'px'; // Slightly smaller for compactness
+            dropdown.style.fontSize = dropdownFontSize + 'px';
         });
 
-        // Apply to session tabs
-        sessionTabs.forEach(tab => {
-            tab.style.fontFamily = baseFontFamily;
-            tab.style.fontSize = (baseFontSize - 1) + 'px';
-        });
+        // Coaching section
+        const coachingContent = document.querySelector('.coaching-content');
+        if (coachingContent) {
+            coachingContent.style.fontSize = coachFontSize + 'px';
+        }
 
-        // Apply to metrics
+        // Metrics
+        const metrics = document.querySelectorAll('.metric-value, .metric-label');
         metrics.forEach(metric => {
-            metric.style.fontFamily = baseFontFamily;
-            metric.style.fontSize = (baseFontSize - 4) + 'px';
+            metric.style.fontSize = metricsFontSize + 'px';
+        });
+
+        // Session tabs
+        const sessionTabs = document.querySelectorAll('.session-tab');
+        sessionTabs.forEach(tab => {
+            tab.style.fontSize = dropdownFontSize + 'px';
         });
 
         // Update default selections
