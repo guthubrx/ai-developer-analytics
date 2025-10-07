@@ -1,0 +1,206 @@
+/* VS Code Theme Integration for AI Developer Analytics */
+
+/* VS Code Theme Variables */
+:root {
+  --container-paddings: 14px;
+}
+
+/* VS Code Theme Body */
+body {
+  padding: 0;
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-weight: var(--vscode-font-weight);
+  font-size: var(--vscode-font-size);
+  background-color: var(--vscode-editor-background);
+}
+
+/* VS Code Images */
+img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* VS Code Links */
+a {
+  color: var(--vscode-textLink-foreground);
+}
+
+a:hover,
+a:active {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+/* VS Code Buttons */
+button {
+  border: none;
+  padding: 4px 12px;
+  text-align: center;
+  outline: 1px solid transparent;
+  outline-offset: 2px !important;
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+button:hover {
+  cursor: pointer;
+  background: var(--vscode-button-hoverBackground);
+}
+
+button:focus {
+  outline-color: var(--vscode-focusBorder);
+}
+
+button.secondary {
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+}
+
+button.secondary:hover {
+  background: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* VS Code Inputs */
+input:not([type='checkbox']),
+textarea {
+  display: block;
+  width: 100%;
+  border: none;
+  font-family: var(--vscode-font-family);
+  padding: 4px 8px;
+  color: var(--vscode-input-foreground);
+  outline-color: var(--vscode-input-border);
+  background-color: var(--vscode-input-background);
+}
+
+input:focus,
+textarea:focus {
+  outline-color: var(--vscode-inputOption-activeBorder);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--vscode-input-placeholderForeground);
+}
+
+/* VS Code Theme Overrides for Components */
+.vscode-theme .ai-command-bar {
+  background-color: var(--vscode-editor-background);
+}
+
+.vscode-theme .card {
+  background: var(--vscode-panel-background);
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.vscode-theme .message.user .message-content {
+  background: var(--vscode-textBlockQuote-background);
+  border: 1px solid var(--vscode-textBlockQuote-border);
+}
+
+.vscode-theme .message.ai .message-content {
+  color: var(--vscode-foreground);
+}
+
+.vscode-theme .code-block {
+  background: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-textCodeBlock-border);
+}
+
+.vscode-theme .code-header {
+  background: var(--vscode-panelSectionHeader-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.vscode-theme .command-input-wrapper {
+  background: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+}
+
+.vscode-theme .command-input-wrapper:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+
+.vscode-theme .file-autocomplete {
+  background: var(--vscode-dropdown-background);
+  border: 1px solid var(--vscode-dropdown-border);
+}
+
+.vscode-theme .file-result-item:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.vscode-theme .session-tab.active {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+/* VS Code Theme Transitions */
+.vscode-theme * {
+  transition: none !important;
+}
+
+/* VS Code Theme Focus States */
+.vscode-theme button:focus-visible,
+.vscode-theme select:focus-visible,
+.vscode-theme textarea:focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
+
+/* Remove focus borders globally */
+button:focus,
+select:focus,
+textarea:focus,
+input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* VS Code Theme Scrollbars */
+.vscode-theme .conversation-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--vscode-scrollbarSlider-background) transparent;
+}
+
+.vscode-theme .conversation-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.vscode-theme .conversation-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.vscode-theme .conversation-container::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background);
+  border-radius: 4px;
+}
+
+.vscode-theme .conversation-container::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+/* VS Code Theme Metrics */
+.vscode-theme .metrics-section {
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.vscode-theme .metric-label {
+  color: var(--vscode-descriptionForeground);
+}
+
+/* VS Code Theme Coaching */
+.vscode-theme .coaching-section {
+  background: var(--vscode-panel-background);
+  border: 1px solid var(--vscode-panel-border);
+}
+
+.vscode-theme .coaching-header {
+  background: var(--vscode-panelSectionHeader-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  color: var(--vscode-panelTitle-inactiveForeground);
+}
+
+.vscode-theme .coaching-header:hover {
+  background: var(--vscode-panelSectionHeader-hoverBackground);
+}

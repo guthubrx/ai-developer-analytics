@@ -6,7 +6,8 @@
  */
 
 import { BaseAIClient } from './base-client';
-import { AIProvider, AIResponse } from '../types';
+import { AIProvider, AIResponse, StreamingCallback } from '../types';
+import { loadSystemPrompt } from '../system-prompt-loader';
 
 /**
  * Anthropic client implementation
@@ -42,23 +43,59 @@ export class AnthropicClient extends BaseAIClient {
         try {
             // In a real implementation, this would use the Anthropic SDK
             // Dans une implémentation réelle, cela utiliserait le SDK Anthropic
-            const response = await this.anthropicChat(prompt);
+            const response = await this.anthropicChat(prompt, false);
             const latency = Date.now() - startTime;
 
             const inputTokens = this.calculateTokens(prompt);
-            const outputTokens = this.calculateTokens(response);
+            const outputTokens = this.calculateTokens(response.content);
 
             return {
-                content: response,
+                content: response.content,
                 provider: 'anthropic',
                 tokens: inputTokens + outputTokens,
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: 'claude-3-sonnet'
+                model: 'claude-3-5-sonnet'
             };
         } catch (error) {
             throw new Error(`Anthropic execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Execute prompt with streaming
+     * Exécuter un prompt avec streaming
+     */
+    override async executeWithStreaming(prompt: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+
+        if (!this.apiKey) {
+            throw new Error('Anthropic API key not configured');
+        }
+
+        const startTime = Date.now();
+
+        try {
+            const response = await this.anthropicChat(prompt, true, streamingCallback);
+            const latency = Date.now() - startTime;
+
+            const inputTokens = this.calculateTokens(prompt);
+            const outputTokens = this.calculateTokens(response.content);
+
+            return {
+                content: response.content,
+                provider: 'anthropic',
+                tokens: inputTokens + outputTokens,
+                cost: this.calculateCost(inputTokens, outputTokens),
+                latency,
+                cacheHit: false,
+                model: 'claude-3-5-sonnet'
+            };
+        } catch (error) {
+            throw new Error(`Anthropic streaming execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 
@@ -91,16 +128,42 @@ export class AnthropicClient extends BaseAIClient {
      * Chat with Anthropic (placeholder implementation)
      * Discuter avec Anthropic (implémentation placeholder)
      */
-    private async anthropicChat(prompt: string): Promise<string> {
+    private async anthropicChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
+        const systemPrompt = loadSystemPrompt();
+
+        // System prompt is loaded but not yet integrated in placeholder implementation
+        // In real implementation, systemPrompt would be used in the API call
+
         // This is a placeholder implementation
         // In a real implementation, you would use the Anthropic SDK
         // Ceci est une implémentation placeholder
         // Dans une implémentation réelle, vous utiliseriez le SDK Anthropic
 
-        // Simulate API call
-        // Simuler un appel API
+        // Simulate API call with system prompt
+        // Simuler un appel API avec prompt système
         await new Promise(resolve => setTimeout(resolve, 1200));
 
-        return `Anthropic response to: ${prompt.substring(0, 50)}...`;
+        // Simulate response with system prompt context
+        const response = `Anthropic (claude-3-5-sonnet) response with system prompt (${systemPrompt.length} chars): ${prompt.substring(0, 50)}...`;
+
+        // Simulate streaming if requested
+        if (stream && streamingCallback) {
+            const words = response.split(' ');
+            for (const word of words) {
+                await new Promise(resolve => setTimeout(resolve, 60));
+                streamingCallback.onChunk(word + ' ');
+            }
+            streamingCallback.onComplete({
+                content: response,
+                provider: 'anthropic',
+                tokens: this.calculateTokens(response),
+                cost: this.calculateCost(0, this.calculateTokens(response)),
+                latency: 1200,
+                cacheHit: false,
+                model: 'claude-3-5-sonnet'
+            });
+        }
+
+        return { content: response };
     }
 }

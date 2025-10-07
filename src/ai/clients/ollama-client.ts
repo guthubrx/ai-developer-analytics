@@ -8,6 +8,7 @@
 import * as vscode from 'vscode';
 import { BaseAIClient } from './base-client';
 import { AIProvider, AIResponse, OllamaModel, OllamaResponse } from '../types';
+import { loadSystemPrompt } from '../system-prompt-loader';
 
 /**
  * Ollama client implementation
@@ -114,12 +115,15 @@ export class OllamaClient extends BaseAIClient {
      * Discuter avec un modèle Ollama
      */
     private async ollamaChat(model: string, prompt: string): Promise<OllamaResponse> {
+        const systemPrompt = loadSystemPrompt();
+        const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
         const response = await fetch(`${this.ollamaUrl}/api/generate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model,
-                prompt,
+                prompt: fullPrompt,
                 stream: false
             })
         });

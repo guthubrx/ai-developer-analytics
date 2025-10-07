@@ -1,0 +1,97 @@
+/* Typography System for AI Developer Analytics */
+
+body {
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Headings */
+.super-title {
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.main-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.card-title {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Text Elements */
+.metric-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.metric-value {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.code-language {
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* Code Typography */
+.code-block pre {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+}
+
+.inline-code {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+}
+
+/* Form Elements */
+.compact-select {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.text-input-wrapper textarea {
+  font-size: var(--font-size-lg);
+  font-family: inherit;
+}
+
+.text-input-wrapper textarea::placeholder {
+  font-size: var(--font-size-base);
+}
+
+/* Status Indicators */
+.status-indicator {
+  font-size: var(--font-size-sm);
+}
+
+.coaching-header {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

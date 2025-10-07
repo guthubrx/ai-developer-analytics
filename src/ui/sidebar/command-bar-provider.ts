@@ -84,7 +84,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             async data => {
                 switch (data.type) {
                     case 'executePrompt':
-                        await this.handleExecutePrompt(data.prompt, data.routingMode, data.provider);
+                        await this.handleExecutePrompt(data.prompt, data.routingMode, data.provider, data.conversationContext);
                         break;
                     case 'getSettings':
                         await this.handleGetSettings();
@@ -97,6 +97,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         break;
                     case 'getProjectFiles':
                         await this.handleGetProjectFiles();
+                        break;
+                    case 'selectModel':
+                        await vscode.commands.executeCommand('ai-analytics.selectModel');
                         break;
                     case 'searchFiles':
                         await this.handleSearchFiles(data.query);
@@ -113,6 +116,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     case 'codeAction':
                         await this.handleCodeAction(data);
                         break;
+                    case 'openSettings':
+                        await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:user.ai-developer-analytics');
+                        break;
                 }
             }
         );
@@ -125,7 +131,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private async handleExecutePrompt(
         prompt: string,
         routingMode: AIRoutingMode,
-        provider?: AIProvider | 'auto'
+        provider?: AIProvider | 'auto',
+        conversationContext?: any[]
     ) {
         if (!this._view) {
             return;
@@ -157,6 +164,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         type: 'executionCompleted',
                         response: response.content,
                         provider: response.provider,
+                        model: response.model,
                         latency: response.latency,
                         tokens: response.tokens,
                         cost: response.cost,
@@ -180,8 +188,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 }
             };
 
-            // Execute with real streaming
-            await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, streamingCallback);
+            // Execute with real streaming and conversation context
+            await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, streamingCallback, conversationContext);
 
         } catch (error) {
             this._view.webview.postMessage({
@@ -230,7 +238,12 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             coachCollapsedByDefault: config.get('coachCollapsedByDefault'),
             sessionTabsEnabled: config.get('sessionTabsEnabled'),
             autoExpandTextarea: config.get('autoExpandTextarea'),
-            streamingEnabled: config.get('streamingEnabled')
+            streamingEnabled: config.get('streamingEnabled'),
+            // API Keys
+            openaiApiKey: config.get('openaiApiKey'),
+            anthropicApiKey: config.get('anthropicApiKey'),
+            deepseekApiKey: config.get('deepseekApiKey'),
+            moonshotApiKey: config.get('moonshotApiKey')
         };
 
         this._view.webview.postMessage({
@@ -267,6 +280,19 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             this._view.webview.postMessage({
                 type: 'testResults',
                 results
+            });
+        }
+    }
+
+    /**
+     * Update selected model in webview
+     * Mettre à jour le modèle sélectionné dans la webview
+     */
+    public updateSelectedModel(model: string) {
+        if (this._view) {
+            this._view.webview.postMessage({
+                type: 'updateSelectedModel',
+                model
             });
         }
     }
@@ -347,10 +373,17 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private _getHtmlForWebview(webview: vscode.Webview): string {
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
         // Obtenir le chemin local vers le script principal exécuté dans la webview, puis le convertir en uri utilisable dans la webview.
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.js'));
-        const styleResetUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'reset.css'));
-        const styleVSCodeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'vscode.css'));
-        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main-vscode.css'));
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.bundle.js'));
+        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'css', 'main.css'));
+
+        // Pre-generate logo URIs for provider icons
+        const logoUris = {
+            openai: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'openai-logo.png')),
+            anthropic: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'anthropic-logo.png')),
+            deepseek: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'deepseek-logo.png')),
+            moonshot: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'moonshot-logo.png')),
+            ollama: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'ollama-logo.png'))
+        };
 
         // Use a nonce to only allow specific scripts to be run
         // Utiliser un nonce pour n'autoriser que des scripts spécifiques à s'exécuter
@@ -365,12 +398,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     Use a content security policy to only allow loading images from https or from our extension directory,
                     and only allow scripts that have a specific nonce.
                 -->
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:">
 
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-                <link href="${styleResetUri}" rel="stylesheet">
-                <link href="${styleVSCodeUri}" rel="stylesheet">
                 <link href="${styleMainUri}" rel="stylesheet">
 
                 <title>AI Command Bar</title>
@@ -379,6 +410,12 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 <div class="ai-command-bar">
                     <div class="header-section">
                         <div class="super-title">CURSOR DEVELOPER ANALYTICS</div>
+                        <button id="settings-btn" class="action-btn" title="Open Settings">
+                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                <path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/>
+                                <path d="M14 8c0-.4-.1-.8-.2-1.2l1.8-1.2-1-1.7-2 .3c-.5-.4-1-.7-1.6-.9L10 1H6l-.4 2.1c-.6.2-1.1.5-1.6.9l-2-.3-1 1.7 1.8 1.2c-.1.4-.2.8-.2 1.2s.1.8.2 1.2L1.4 11.3l1 1.7 2-.3c.5.4 1 .7 1.6.9L6 15h4l.4-2.1c.6-.2 1.1-.5 1.6-.9l2 .3 1-1.7-1.8-1.2c.1-.4.2-.8.2-1.2z"/>
+                            </svg>
+                        </button>
                     </div>
 
                     <!-- Les dropdowns ont été déplacées vers la zone de commande -->
@@ -441,6 +478,12 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                             <div id="coaching-content" class="coaching-content"></div>
                         </div>
 
+                        <!-- Context Size Info Bar -->
+                        <div class="context-info-bar" id="context-info-bar">
+                            <span class="context-label">Context Size:</span>
+                            <span id="context-tokens" class="context-value">0 tokens</span>
+                        </div>
+
                         <!-- Barre de commande compacte -->
                         <div class="card command-input-container">
                             <div class="command-input-wrapper">
@@ -473,27 +516,29 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                                         <!-- Dropdown pour sélectionner le moteur AI -->
                                         <select id="engine-select" class="compact-select" title="AI Engine">
                                             <option value="auto">Auto</option>
-                                            <option value="gpt5">GPT-5</option>
-                                            <option value="claude">Claude</option>
+                                            <option value="openai">OpenAI</option>
+                                            <option value="anthropic">Anthropic</option>
                                             <option value="deepseek" selected>DeepSeek</option>
                                             <option value="moonshot">Moonshot</option>
+                                            <option value="ollama">Ollama</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <!-- Zone de texte auto-expansive -->
                                 <div class="text-input-wrapper">
-                                    <!-- Moonshot model input (shown only when Moonshot selected) -->
-                                    <div id="moonshot-model-row" style="display:none; margin-bottom:6px; gap:6px; align-items:center;">
-                                        <label for="moonshot-model-input" style="font-size:11px; color: var(--vscode-descriptionForeground);">Moonshot model</label>
-                                        <input id="moonshot-model-input" type="text" placeholder="e.g., moonshot-v1-8k or moonshot-chat" style="flex:1; background: var(--bg-secondary); color: var(--text-primary); border:1px solid var(--border-primary); border-radius:2px; padding:4px 6px; font-size:11px;" />
-                                        <select id="moonshot-model-suggestions" class="compact-select" title="Model suggestions">
-                                            <option value="">Suggestions</option>
-                                            <option value="moonshot-v1-8k">moonshot-v1-8k</option>
-                                            <option value="moonshot-v1-32k">moonshot-v1-32k</option>
-                                            <option value="moonshot-v1-128k">moonshot-v1-128k</option>
-                                            <option value="moonshot-chat">moonshot-chat</option>
+                                    <!-- Model selection -->
+                                    <div id="model-selection-row" style="margin-bottom:6px; gap:6px; align-items:center;">
+                                        <label style="font-size:11px; color: var(--vscode-descriptionForeground);">Modèles</label>
+                                        <select id="model-suggestions" class="compact-select" title="Modèles">
+                                            <option value="">Sélectionner un modèle</option>
                                         </select>
+                                        <!-- Bouton pour ouvrir le sélecteur de modèles -->
+                                        <button id="select-model-btn" class="action-btn" title="Sélectionner un modèle d\'IA" style="margin-left:4px;">
+                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+                                                <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                            </svg>
+                                        </button>
                                     </div>
                                     <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>
                                 </div>
@@ -501,12 +546,12 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                                 <!-- Actions en bas -->
                                 <div class="input-actions">
                                     <button id="image-attach-btn" class="action-btn" title="Attach image">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                             <path d="M14.5 3h-13C.7 3 0 3.7 0 4.5v7c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5v-7c0-.8-.7-1.5-1.5-1.5zM1.5 4h13c.3 0 .5.2.5.5v4.8l-2.3-2.3c-.2-.2-.5-.2-.7 0L9 9.3 6.5 6.8c-.2-.2-.5-.2-.7 0L2 10.6V4.5c0-.3.2-.5.5-.5z"/>
                                         </svg>
                                     </button>
                                     <button id="send-btn" class="send-btn" title="Send message">
-                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
                                             <path d="M15.7 7.3l-7-7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4L7.6 7H1c-.6 0-1 .4-1 1s.4 1 1 1h6.6L7.3 14.3c-.4.4-.4 1 0 1.4.2.2.5.3.7.3s.5-.1.7-.3l7-7c.4-.4.4-1 0-1.4z"/>
                                         </svg>
                                     </button>
@@ -542,6 +587,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     </div>
                 </div>
 
+                <script nonce="${nonce}">
+                    // Pass logo URIs to JavaScript modules
+                    window.logoUris = ${JSON.stringify(logoUris)};
+                </script>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;

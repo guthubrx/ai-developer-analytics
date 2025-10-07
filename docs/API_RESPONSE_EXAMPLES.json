@@ -1,0 +1,379 @@
+{
+  "openai": {
+    "description": "Exemple de réponse OpenAI GPT-4o",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "example_response": {
+      "id": "chatcmpl-1234567890abcdef",
+      "object": "chat.completion",
+      "created": 1677652288,
+      "model": "gpt-4o",
+      "system_fingerprint": "fp_44709d6fcb",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Bonjour ! Je suis GPT-4o, votre assistant IA. Comment puis-je vous aider aujourd'hui ?"
+          },
+          "logprobs": null,
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 15,
+        "completion_tokens": 25,
+        "total_tokens": 40
+      }
+    },
+    "streaming_example": {
+      "chunk_1": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "gpt-4o",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "role": "assistant",
+              "content": "Bonjour"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "chunk_2": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "gpt-4o",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": " ! Je suis GPT-4o"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "final_chunk": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "gpt-4o",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "."
+            },
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    }
+  },
+  "anthropic": {
+    "description": "Exemple de réponse Anthropic Claude 3.5 Sonnet",
+    "endpoint": "https://api.anthropic.com/v1/messages",
+    "example_response": {
+      "id": "msg_01234567890abcdef",
+      "type": "message",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Bonjour ! Je suis Claude 3.5 Sonnet, votre assistant IA. Comment puis-je vous aider aujourd'hui ?"
+        }
+      ],
+      "model": "claude-3-5-sonnet-20241022",
+      "stop_reason": "end_turn",
+      "stop_sequence": null,
+      "usage": {
+        "input_tokens": 15,
+        "output_tokens": 25
+      }
+    },
+    "streaming_example": {
+      "chunk_1": {
+        "type": "message_start",
+        "message": {
+          "id": "msg_01234567890abcdef",
+          "type": "message",
+          "role": "assistant",
+          "content": [],
+          "model": "claude-3-5-sonnet-20241022"
+        }
+      },
+      "chunk_2": {
+        "type": "content_block_start",
+        "index": 0,
+        "content_block": {
+          "type": "text",
+          "text": ""
+        }
+      },
+      "chunk_3": {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": "Bonjour"
+        }
+      },
+      "chunk_4": {
+        "type": "content_block_delta",
+        "index": 0,
+        "delta": {
+          "type": "text_delta",
+          "text": " ! Je suis Claude"
+        }
+      },
+      "final_chunk": {
+        "type": "message_delta",
+        "delta": {
+          "stop_reason": "end_turn",
+          "stop_sequence": null
+        },
+        "usage": {
+          "output_tokens": 25
+        }
+      }
+    }
+  },
+  "deepseek": {
+    "description": "Exemple de réponse DeepSeek Chat",
+    "endpoint": "https://api.deepseek.com/chat/completions",
+    "example_response": {
+      "id": "chatcmpl-1234567890abcdef",
+      "object": "chat.completion",
+      "created": 1677652288,
+      "model": "deepseek-chat",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Bonjour ! Je suis DeepSeek Chat, votre assistant IA. Comment puis-je vous aider aujourd'hui ?"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 15,
+        "completion_tokens": 25,
+        "total_tokens": 40
+      }
+    },
+    "streaming_example": {
+      "chunk_1": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "deepseek-chat",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "role": "assistant",
+              "content": "Bonjour"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "chunk_2": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "deepseek-chat",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": " ! Je suis DeepSeek"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "final_chunk": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "deepseek-chat",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "."
+            },
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    }
+  },
+  "moonshot": {
+    "description": "Exemple de réponse Moonshot Kimi V2",
+    "endpoint": "https://api.moonshot.cn/v1/chat/completions",
+    "example_response": {
+      "id": "chatcmpl-1234567890abcdef",
+      "object": "chat.completion",
+      "created": 1677652288,
+      "model": "moonshot-v1-8k",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "Bonjour ! Je suis Moonshot Kimi V2, votre assistant IA. Comment puis-je vous aider aujourd'hui ?"
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 15,
+        "completion_tokens": 25,
+        "total_tokens": 40
+      }
+    },
+    "streaming_example": {
+      "chunk_1": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "moonshot-v1-8k",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "role": "assistant",
+              "content": "Bonjour"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "chunk_2": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "moonshot-v1-8k",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": " ! Je suis Moonshot"
+            },
+            "finish_reason": null
+          }
+        ]
+      },
+      "final_chunk": {
+        "id": "chatcmpl-1234567890abcdef",
+        "object": "chat.completion.chunk",
+        "created": 1677652288,
+        "model": "moonshot-v1-8k",
+        "choices": [
+          {
+            "index": 0,
+            "delta": {
+              "content": "."
+            },
+            "finish_reason": "stop"
+          }
+        ]
+      }
+    }
+  },
+  "ollama": {
+    "description": "Exemple de réponse Ollama (modèle local)",
+    "endpoint": "http://localhost:11434/api/generate",
+    "example_response": {
+      "model": "phi-4",
+      "created_at": "2024-10-07T06:30:00.000Z",
+      "response": "Bonjour ! Je suis Phi-4, votre assistant IA local. Comment puis-je vous aider aujourd'hui ?",
+      "done": true,
+      "context": [1, 2, 3, 4, 5],
+      "total_duration": 1000000000,
+      "load_duration": 100000000,
+      "prompt_eval_count": 15,
+      "prompt_eval_duration": 200000000,
+      "eval_count": 25,
+      "eval_duration": 700000000,
+      "prompt_eval_rate": 75.0,
+      "eval_rate": 35.71
+    },
+    "streaming_example": {
+      "chunk_1": {
+        "model": "phi-4",
+        "created_at": "2024-10-07T06:30:00.000Z",
+        "response": "Bonjour",
+        "done": false
+      },
+      "chunk_2": {
+        "model": "phi-4",
+        "created_at": "2024-10-07T06:30:00.000Z",
+        "response": " ! Je suis Phi-4",
+        "done": false
+      },
+      "final_chunk": {
+        "model": "phi-4",
+        "created_at": "2024-10-07T06:30:00.000Z",
+        "response": ".",
+        "done": true,
+        "context": [1, 2, 3, 4, 5],
+        "total_duration": 1000000000,
+        "load_duration": 100000000,
+        "prompt_eval_count": 15,
+        "prompt_eval_duration": 200000000,
+        "eval_count": 25,
+        "eval_duration": 700000000,
+        "prompt_eval_rate": 75.0,
+        "eval_rate": 35.71
+      }
+    }
+  },
+  "error_examples": {
+    "openai_error": {
+      "error": {
+        "message": "Incorrect API key provided",
+        "type": "invalid_request_error",
+        "param": null,
+        "code": "invalid_api_key"
+      }
+    },
+    "anthropic_error": {
+      "type": "error",
+      "error": {
+        "type": "invalid_request_error",
+        "message": "Invalid API key"
+      }
+    },
+    "deepseek_error": {
+      "error": {
+        "message": "Invalid API key",
+        "type": "invalid_request_error",
+        "code": "invalid_api_key"
+      }
+    },
+    "moonshot_error": {
+      "error": {
+        "message": "Invalid API key",
+        "type": "invalid_request_error",
+        "code": "invalid_api_key"
+      }
+    },
+    "ollama_error": {
+      "error": "model 'phi-4' not found, try pulling it first"
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2024-10-07",
+    "extension_version": "0.3.1",
+    "description": "Exemples concrets de réponses API pour tous les fournisseurs d'IA intégrés dans l'extension AI Developer Analytics"
+  }
+}

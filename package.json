@@ -2,8 +2,8 @@
   "name": "ai-developer-analytics",
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
-  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching",
-  "version": "0.2.7",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-07 07:14 CEST",
+  "version": "0.3.1",
   "license": "AGPL-3.0-only",
   "icon": "media/icon.png",
   "repository": {
@@ -94,6 +94,11 @@
         "command": "ai-analytics.showMCPServerStatus",
         "title": "Show MCP Server Status",
         "category": "AI Analytics"
+      },
+      {
+        "command": "ai-analytics.selectModel",
+        "title": "Select AI Model",
+        "category": "AI Analytics"
       }
     ],
     "configuration": {
@@ -140,7 +145,7 @@
         "aiAnalytics.deepseekApiKey": {
           "type": "string",
           "default": "",
-          "description": "DeepSeek API key for AI requests"
+          "description": "DeepSeek API key"
         },
         "aiAnalytics.commandBarFontFamily": {
           "type": "string",
@@ -195,19 +200,37 @@
         "aiAnalytics.defaultEngine": {
           "type": "string",
           "default": "deepseek",
-          "enum": ["auto", "deepseek", "openai", "anthropic", "ollama"],
+          "enum": [
+            "auto",
+            "deepseek",
+            "openai",
+            "anthropic",
+            "ollama"
+          ],
           "description": "Default AI engine selection"
         },
         "aiAnalytics.defaultTaskType": {
           "type": "string",
           "default": "general",
-          "enum": ["general", "code", "documentation", "debug"],
+          "enum": [
+            "general",
+            "code",
+            "documentation",
+            "debug"
+          ],
           "description": "Default task type selection"
         },
         "aiAnalytics.defaultMode": {
           "type": "string",
           "default": "auto",
-          "enum": ["auto", "eco", "normal", "quality", "strict-json", "creative"],
+          "enum": [
+            "auto",
+            "eco",
+            "normal",
+            "quality",
+            "strict-json",
+            "creative"
+          ],
           "description": "Default mode selection"
         },
         "aiAnalytics.accentColor": {
@@ -244,8 +267,17 @@
           "type": "boolean",
           "default": true,
           "description": "Enable real-time streaming responses"
-        }
-      ,
+        },
+        "aiAnalytics.openaiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI API key"
+        },
+        "aiAnalytics.anthropicApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Anthropic Claude API key"
+        },
         "aiAnalytics.moonshotApiKey": {
           "type": "string",
           "default": "",
@@ -265,17 +297,19 @@
   ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./ && npm run build:mcp",
+    "compile": "tsc -p ./ && npm run build:mcp && npm run build:frontend",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "playwright test",
-    "package": "vsce package",
+    "package": "node update-build-date.js && vsce package",
     "publish": "vsce publish",
     "build:mcp": "cd server-mcp && npm run build",
-    "test:mcp": "cd server-mcp && npm test"
+    "test:mcp": "cd server-mcp && npm test",
+    "build:frontend": "tsup --config tsup.config.js",
+    "watch:frontend": "tsup --config tsup.config.js --watch"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

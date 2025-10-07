@@ -33,22 +33,26 @@ export class AIRouter {
     async execute(
         prompt: string,
         routingMode: AIRoutingMode,
-        selectedProvider?: AIProvider | 'auto'
+        selectedProvider?: AIProvider | 'auto',
+        conversationContext?: any[]
     ): Promise<AIResponse> {
         const startTime = Date.now();
 
         try {
             let response: AIResponse;
 
+            // Enrich prompt with conversation context if available
+            const enrichedPrompt = this.enrichPromptWithContext(prompt, conversationContext);
+
             // Level 1: Direct execution (manual selection) - PRIORITAIRE
             // Niveau 1 : Exécution directe (sélection manuelle) - PRIORITAIRE
             if (selectedProvider && selectedProvider !== 'auto') {
-                response = await this.executeDirect(prompt, selectedProvider as AIProvider);
+                response = await this.executeDirect(enrichedPrompt, selectedProvider as AIProvider);
             }
             // Level 2: Intelligent routing (automatic/delegated)
             // Niveau 2 : Routage intelligent (automatique/délégué)
             else {
-                response = await this.executeIntelligentRouting(prompt, routingMode);
+                response = await this.executeIntelligentRouting(enrichedPrompt, routingMode);
             }
 
             const latency = Date.now() - startTime;
@@ -156,22 +160,26 @@ export class AIRouter {
         prompt: string,
         routingMode: AIRoutingMode,
         selectedProvider?: AIProvider | 'auto',
-        streamingCallback?: StreamingCallback
+        streamingCallback?: StreamingCallback,
+        conversationContext?: any[]
     ): Promise<AIResponse> {
         const startTime = Date.now();
 
         try {
             let response: AIResponse;
 
+            // Enrich prompt with conversation context if available
+            const enrichedPrompt = this.enrichPromptWithContext(prompt, conversationContext);
+
             // Level 1: Direct execution (manual selection) - PRIORITAIRE
             // Niveau 1 : Exécution directe (sélection manuelle) - PRIORITAIRE
             if (selectedProvider && selectedProvider !== 'auto') {
-                response = await this.executeDirectWithStreaming(prompt, selectedProvider as AIProvider, streamingCallback);
+                response = await this.executeDirectWithStreaming(enrichedPrompt, selectedProvider as AIProvider, streamingCallback);
             }
             // Level 2: Intelligent routing (automatic/delegated)
             // Niveau 2 : Routage intelligent (automatique/délégué)
             else {
-                response = await this.executeIntelligentRoutingWithStreaming(prompt, routingMode, streamingCallback);
+                response = await this.executeIntelligentRoutingWithStreaming(enrichedPrompt, routingMode, streamingCallback);
             }
 
             const latency = Date.now() - startTime;
@@ -388,5 +396,25 @@ export class AIRouter {
         } else {
             return 'medium';
         }
+    }
+
+    /**
+     * Enrich prompt with conversation context
+     * Enrichir le prompt avec le contexte de conversation
+     */
+    private enrichPromptWithContext(prompt: string, conversationContext?: any[]): string {
+        if (!conversationContext || conversationContext.length === 0) {
+            return prompt;
+        }
+
+        // Build conversation history
+        let context = "\n\n--- Conversation History ---\n";
+        conversationContext.forEach(message => {
+            const role = message.type === 'user' ? 'User' : 'Assistant';
+            context += `${role}: ${message.content}\n`;
+        });
+        context += "--- End Conversation History ---\n\n";
+
+        return context + prompt;
     }
 }

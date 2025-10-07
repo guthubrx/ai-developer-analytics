@@ -81,7 +81,7 @@ export class DeepSeekClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: 'deepseek-chat'
+                model: apiResponse.model || 'deepseek-chat' // Use model from API response
             };
         } catch (error) {
             console.error(`[DeepSeek] Execution failed: ${error}`);
@@ -173,7 +173,7 @@ export class DeepSeekClient extends BaseAIClient {
      * Chat with DeepSeek using real API
      * Discuter avec DeepSeek en utilisant l'API réelle
      */
-    private async deepseekChat(prompt: string): Promise<{ content: string; usage?: any }> {
+    private async deepseekChat(prompt: string): Promise<{ content: string; usage?: any; model?: string }> {
         const apiUrl = 'https://api.deepseek.com/chat/completions';
 
         const systemPrompt = loadSystemPrompt();
@@ -199,6 +199,7 @@ export class DeepSeekClient extends BaseAIClient {
 
             const response = await this.makeApiRequest(apiUrl, requestBody);
             console.log(`[DeepSeek] API response received`);
+            console.log(`[DeepSeek] Full API response structure:`, JSON.stringify(response, null, 2));
 
             if (!response.choices || !response.choices[0] || !response.choices[0].message) {
                 console.error('[DeepSeek] Invalid API response format:', response);
@@ -214,7 +215,8 @@ export class DeepSeekClient extends BaseAIClient {
 
             return {
                 content,
-                usage: response.usage
+                usage: response.usage,
+                model: response.model // Include model from API response
             };
 
         } catch (error) {

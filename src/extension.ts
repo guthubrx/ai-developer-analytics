@@ -17,6 +17,7 @@ import { AICoachProvider } from './ui/dashboards/coach-provider';
 import { registerDeepSeekTestCommand } from './test/deepseek-manual-test';
 import { MCPManager } from './mcp/mcp-manager';
 import { SessionManager } from './sessions/manager';
+import { AIModelManager } from './ai/model-manager';
 
 /**
  * Extension activation function
@@ -37,6 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
     const hotReloadManager = new HotReloadManager(context);
     mcpManager = new MCPManager(context);
     const sessionManager = new SessionManager(context);
+    const aiModelManager = new AIModelManager(context);
 
     // Register webview providers
     // Enregistrer les fournisseurs de webview
@@ -136,6 +138,15 @@ export async function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage(
                 `MCP Server Status: ${status.isRunning ? 'Running' : 'Stopped'}${status.pid ? ` (PID: ${status.pid})` : ''}`
             );
+        }),
+        vscode.commands.registerCommand('ai-analytics.selectModel', async () => {
+            const selectedModel = await aiModelManager.selectOrAddModel();
+            if (selectedModel) {
+                await aiModelManager.setSelectedModel(selectedModel);
+                // Notify webview providers about model change
+                // Notifier les fournisseurs de webview du changement de modèle
+                commandBarProvider.updateSelectedModel(selectedModel);
+            }
         })
     );
 

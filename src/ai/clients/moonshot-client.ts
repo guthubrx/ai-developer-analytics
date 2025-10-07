@@ -45,7 +45,7 @@ export class MoonshotClient extends BaseAIClient {
             cost: this.calculateCost(inputTokens, outputTokens),
             latency,
             cacheHit: false,
-            model: 'moonshot-v1-8k' // default example
+            model: apiResponse.model || 'moonshot-v1-8k' // Use model from API response
         };
     }
 
@@ -87,7 +87,7 @@ export class MoonshotClient extends BaseAIClient {
         this.apiKey = apiKey;
     }
 
-    private async kimiChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
+    private async kimiChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
         // Endpoint and payload based on Moonshot docs
         // https://platform.moonshot.ai/docs/guide/start-using-kimi-api
         const apiUrl = 'https://api.moonshot.cn/v1/chat/completions';
@@ -108,7 +108,7 @@ export class MoonshotClient extends BaseAIClient {
         }
         const data = await this.makeApiRequest(apiUrl, requestBody);
         const content = data.choices?.[0]?.message?.content || '';
-        return { content, usage: data.usage };
+        return { content, usage: data.usage, model: data.model };
     }
 
     private async makeApiRequest(url: string, body: any): Promise<any> {
