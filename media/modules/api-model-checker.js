@@ -93,7 +93,7 @@ class APIModelChecker {
             ],
             deepseek: [
                 { value: 'deepseek-chat', label: 'DeepSeek Chat', description: 'General purpose chat model', context: 32768, maxTokens: 4096 },
-                { value: 'deepseek-coder', label: 'DeepSeek Coder', description: 'Specialized for coding tasks', context: 32768, maxTokens: 4096 }
+                { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner', description: 'Enhanced reasoning capabilities', context: 32768, maxTokens: 4096 }
             ],
             moonshot: [
                 { value: 'moonshot-v1-8k', label: 'Moonshot v1 8k', description: 'Standard Moonshot model with 8k context', context: 8192, maxTokens: 4096 },

@@ -496,7 +496,7 @@ export class ModelChecker {
      * Vérifier les modèles DeepSeek
      */
     private async checkDeepSeekModels(): Promise<ModelInfo[]> {
-        const apiKey = await this.getApiKey('deepseek-api-key');
+        const apiKey = await this.getApiKey('deepseekApiKey');
         if (!apiKey) {
             console.log('No DeepSeek API key found, returning default models');
             return this.getDefaultDeepSeekModels();
@@ -657,7 +657,6 @@ export class ModelChecker {
     private formatDeepSeekModelName(modelId: string): string {
         const nameMap: Record<string, string> = {
             'deepseek-chat': 'DeepSeek Chat',
-            'deepseek-coder': 'DeepSeek Coder',
             'deepseek-reasoner': 'DeepSeek Reasoner',
             'deepseek-v2': 'DeepSeek V2',
             'deepseek-v2-chat': 'DeepSeek V2 Chat',
@@ -673,7 +672,6 @@ export class ModelChecker {
     private getDeepSeekModelDescription(modelId: string): string {
         const descriptionMap: Record<string, string> = {
             'deepseek-chat': 'General purpose chat model',
-            'deepseek-coder': 'Specialized for coding tasks',
             'deepseek-reasoner': 'Enhanced reasoning capabilities',
             'deepseek-v2': 'Latest DeepSeek model version',
             'deepseek-v2-chat': 'Latest general purpose chat model',
@@ -968,8 +966,8 @@ export class ModelChecker {
      */
     private getDefaultDeepSeekModels(): ModelInfo[] {
         return [
-            { id: 'deepseek-chat', name: 'DeepSeek Chat', description: 'General purpose', context: 32768, maxTokens: 4096, available: true },
-            { id: 'deepseek-coder', name: 'DeepSeek Coder', description: 'Coding specialized', context: 32768, maxTokens: 4096, available: true }
+            { id: 'deepseek-chat', name: 'DeepSeek Chat', description: 'General purpose chat model', context: 32768, maxTokens: 4096, available: true },
+            { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', description: 'Enhanced reasoning capabilities', context: 32768, maxTokens: 4096, available: true }
         ];
     }
 
