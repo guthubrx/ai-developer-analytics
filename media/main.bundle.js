@@ -1361,6 +1361,731 @@ var AIAnalytics = (function () {
     }
   });
 
+  // media/modules/mockup-message-manager.js
+  var MockupMessageManager, mockup_message_manager_default;
+  var init_mockup_message_manager = __esm({
+    "media/modules/mockup-message-manager.js"() {
+      MockupMessageManager = class {
+        constructor() {
+          this.currentSession = "s1";
+          this.sessions = {
+            s1: [],
+            s2: []
+          };
+          this.streamingMessage = null;
+          this.streamingContent = "";
+        }
+        /**
+         * Add a user message
+         * Ajouter un message utilisateur
+         */
+        addUserMessage(content) {
+          const conversationContent = document.getElementById("conversation-content");
+          if (!conversationContent) return;
+          const messageDiv = document.createElement("div");
+          messageDiv.className = `message user ${this.currentSession}`;
+          messageDiv.textContent = content;
+          conversationContent.appendChild(messageDiv);
+          this.scrollToBottom();
+          this.sessions[this.currentSession].push({
+            type: "user",
+            content,
+            timestamp: /* @__PURE__ */ new Date()
+          });
+        }
+        /**
+         * Start AI response streaming
+         * Commencer le streaming de la réponse IA
+         */
+        startAIResponse() {
+          const conversationContent = document.getElementById("conversation-content");
+          if (!conversationContent) return;
+          this.streamingMessage = document.createElement("div");
+          this.streamingMessage.className = `message ai ${this.currentSession}`;
+          this.streamingMessage.innerHTML = '<div class="streaming-content"></div>';
+          conversationContent.appendChild(this.streamingMessage);
+          this.scrollToBottom();
+          this.streamingContent = "";
+        }
+        /**
+         * Add chunk to streaming response
+         * Ajouter un chunk à la réponse en streaming
+         */
+        addStreamingChunk(chunk) {
+          if (!this.streamingMessage) return;
+          this.streamingContent += chunk;
+          const streamingDiv = this.streamingMessage.querySelector(".streaming-content");
+          if (streamingDiv) {
+            streamingDiv.innerHTML = this.formatStreamingContent(this.streamingContent);
+          }
+          this.scrollToBottom();
+        }
+        /**
+         * Complete AI response
+         * Finaliser la réponse IA
+         */
+        completeAIResponse() {
+          if (!this.streamingMessage) return;
+          const finalContent = this.processContentForBlocks(this.streamingContent);
+          this.streamingMessage.innerHTML = finalContent;
+          this.sessions[this.currentSession].push({
+            type: "ai",
+            content: this.streamingContent,
+            timestamp: /* @__PURE__ */ new Date()
+          });
+          this.streamingMessage = null;
+          this.streamingContent = "";
+        }
+        /**
+         * Format streaming content with live parsing
+         * Formater le contenu en streaming avec parsing en live
+         */
+        formatStreamingContent(content) {
+          return content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>").replace(/\n/g, "<br>");
+        }
+        /**
+         * Process content for blocks (diff, command, etc.)
+         * Traiter le contenu pour les blocs
+         */
+        processContentForBlocks(content) {
+          let processedContent = content;
+          const blocks = [];
+          const diffMatches = content.match(/```diff\n([\s\S]*?)\n```/g);
+          if (diffMatches) {
+            diffMatches.forEach((match, index) => {
+              const diffContent = match.replace(/```diff\n|\n```/g, "");
+              const fileName = this.extractFileNameFromDiff(diffContent);
+              const stats = this.calculateDiffStats(diffContent);
+              blocks.push({
+                type: "diff-box",
+                fileName: fileName || "file.diff",
+                additions: stats.additions,
+                deletions: stats.deletions,
+                content: diffContent
+              });
+              processedContent = processedContent.replace(match, `{{DIFF_BLOCK_${index}}}`);
+            });
+          }
+          const commandMatches = content.match(/```bash\n([\s\S]*?)\n```/g);
+          if (commandMatches) {
+            commandMatches.forEach((match, index) => {
+              const commandContent = match.replace(/```bash\n|\n```/g, "");
+              const title = this.extractCommandTitle(commandContent);
+              blocks.push({
+                type: "command-block",
+                title: title || "Auto-Ran command",
+                command: commandContent,
+                output: commandContent
+              });
+              processedContent = processedContent.replace(match, `{{COMMAND_BLOCK_${index}}}`);
+            });
+          }
+          const fileMatches = content.match(/`([^`]+\.(ts|js|tsx|jsx|py|java|cpp|c|h|css|html|json|yaml|yml|md))`/g);
+          if (fileMatches) {
+            fileMatches.forEach((match) => {
+              const fileName = match.replace(/`/g, "");
+              const fileRef = this.createFileReference(fileName);
+              processedContent = processedContent.replace(match, fileRef);
+            });
+          }
+          processedContent = processedContent.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>").replace(/\*(.*?)\*/g, "<em>$1</em>").replace(/\n/g, "<br>");
+          blocks.forEach((block, index) => {
+            if (block.type === "diff-box") {
+              const blockHtml = this.createDiffBox(block);
+              processedContent = processedContent.replace(`{{DIFF_BLOCK_${index}}}`, blockHtml);
+            } else if (block.type === "command-block") {
+              const blockHtml = this.createCommandBlock(block);
+              processedContent = processedContent.replace(`{{COMMAND_BLOCK_${index}}}`, blockHtml);
+            }
+          });
+          return processedContent;
+        }
+        /**
+         * Create file reference
+         * Créer une référence de fichier
+         */
+        createFileReference(fileName) {
+          return `<span class="file-ref">${fileName}</span>`;
+        }
+        /**
+         * Create diff box
+         * Créer une boîte diff
+         */
+        createDiffBox(block) {
+          return `
+            <div class="diff-box">
+                <div class="diff-header">
+                    <div class="diff-header-left">${block.fileName}</div>
+                    <div class="diff-header-right">
+                        <span class="plus">+${block.additions}</span>
+                        <span class="minus">-${block.deletions}</span>
+                        <span class="diff-icon">\u{1F4CB}</span>
+                        <span class="diff-icon">\u22EF</span>
+                    </div>
+                </div>
+                <div class="diff-content">
+                    <pre class="diff">${this.formatDiffContent(block.content)}</pre>
+                </div>
+            </div>
+        `;
+        }
+        /**
+         * Create command block
+         * Créer un bloc de commande
+         */
+        createCommandBlock(block) {
+          return `
+            <div class="command-block">
+                <div class="command-header" onclick="toggleCommand(this)">
+                    <span>${block.title}</span>
+                    <span class="command-toggle collapsed">\u2304</span>
+                </div>
+                <div class="command-body partial">
+                    ${this.formatCommandOutput(block.command)}
+                </div>
+            </div>
+        `;
+        }
+        /**
+         * Format diff content
+         * Formater le contenu diff
+         */
+        formatDiffContent(diffContent) {
+          return diffContent.split("\n").map((line) => {
+            if (line.startsWith("+")) {
+              return `<ins>${this.escapeHtml(line)}</ins>`;
+            } else if (line.startsWith("-")) {
+              return `<del>${this.escapeHtml(line)}</del>`;
+            } else {
+              return this.escapeHtml(line);
+            }
+          }).join("\n");
+        }
+        /**
+         * Format command output
+         * Formater la sortie de commande
+         */
+        formatCommandOutput(command) {
+          return command.split("\n").map((line) => {
+            if (line.startsWith("$")) {
+              return `<span class="cmd">${this.escapeHtml(line)}</span>`;
+            } else if (line.startsWith(">")) {
+              return `<span class="cmd">${this.escapeHtml(line)}</span>`;
+            } else if (line.startsWith("\u2713") || line.startsWith("\u2705")) {
+              return `<span style="color: #79c279;">${this.escapeHtml(line)}</span>`;
+            } else if (line.startsWith("\u{1F4E6}") || line.startsWith("CLI")) {
+              return `<span class="comment">${this.escapeHtml(line)}</span>`;
+            } else {
+              return this.escapeHtml(line);
+            }
+          }).join("\n");
+        }
+        /**
+         * Extract file name from diff
+         * Extraire le nom de fichier du diff
+         */
+        extractFileNameFromDiff(diffContent) {
+          const lines = diffContent.split("\n");
+          for (const line of lines) {
+            if (line.startsWith("+++") || line.startsWith("---")) {
+              return line.replace(/^[+-]{3}\s*/, "").split("	")[0];
+            }
+          }
+          return "file.diff";
+        }
+        /**
+         * Calculate diff stats
+         * Calculer les statistiques du diff
+         */
+        calculateDiffStats(diffContent) {
+          const lines = diffContent.split("\n");
+          let additions = 0;
+          let deletions = 0;
+          for (const line of lines) {
+            if (line.startsWith("+") && !line.startsWith("+++")) {
+              additions++;
+            } else if (line.startsWith("-") && !line.startsWith("---")) {
+              deletions++;
+            }
+          }
+          return { additions, deletions };
+        }
+        /**
+         * Extract command title
+         * Extraire le titre de la commande
+         */
+        extractCommandTitle(commandContent) {
+          const lines = commandContent.split("\n");
+          const firstLine = lines[0];
+          if (firstLine.startsWith("$")) {
+            const command = firstLine.replace("$", "").trim();
+            const parts = command.split(" ");
+            if (parts.length >= 2) {
+              return `Auto-Ran command: ${parts[0]}, ${parts[1]}`;
+            }
+            return `Auto-Ran command: ${parts[0]}`;
+          }
+          return "Auto-Ran command";
+        }
+        /**
+         * Switch to session
+         * Basculer vers une session
+         */
+        switchToSession(sessionId) {
+          this.currentSession = sessionId;
+          document.querySelectorAll(".tab").forEach((tab) => {
+            tab.classList.remove("active");
+          });
+          const activeTab = document.querySelector(`[data-session="${sessionId}"]`);
+          if (activeTab) {
+            activeTab.classList.add("active");
+          }
+          document.querySelectorAll(".message").forEach((message) => {
+            if (message.classList.contains(sessionId)) {
+              message.style.display = "";
+            } else {
+              message.style.display = "none";
+            }
+          });
+        }
+        /**
+         * Clear conversation
+         * Effacer la conversation
+         */
+        clearConversation() {
+          const conversationContent = document.getElementById("conversation-content");
+          if (conversationContent) {
+            conversationContent.innerHTML = "";
+          }
+          this.sessions[this.currentSession] = [];
+        }
+        /**
+         * Scroll to bottom
+         * Faire défiler vers le bas
+         */
+        scrollToBottom() {
+          const chatMessages = document.getElementById("chatMessages");
+          if (chatMessages) {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        }
+        /**
+         * Escape HTML
+         * Échapper le HTML
+         */
+        escapeHtml(text) {
+          const div = document.createElement("div");
+          div.textContent = text;
+          return div.innerHTML;
+        }
+      };
+      window.toggleCommand = function(header) {
+        const body = header.nextElementSibling;
+        const arrow = header.querySelector(".command-toggle");
+        const isPartial = body.classList.contains("partial");
+        if (isPartial) {
+          body.classList.remove("partial");
+          body.classList.add("collapsed");
+          arrow.classList.remove("collapsed");
+        } else {
+          body.classList.add("partial");
+          body.classList.remove("collapsed");
+          arrow.classList.add("collapsed");
+        }
+      };
+      mockup_message_manager_default = new MockupMessageManager();
+    }
+  });
+
+  // media/modules/mockup-events-exact.js
+  var MockupEventsManagerExact, mockup_events_exact_default;
+  var init_mockup_events_exact = __esm({
+    "media/modules/mockup-events-exact.js"() {
+      MockupEventsManagerExact = class {
+        constructor() {
+          this.currentSession = "s1";
+          this.modelsByProvider = {
+            OpenAI: ["gpt-4o", "gpt-4o-mini"],
+            Anthropic: ["claude-3.5", "claude-3-opus"],
+            DeepSeek: ["coder", "reasoner"],
+            Moonshot: ["m1", "m1-mini"],
+            Ollama: ["llama3", "mistral", "phi3"]
+          };
+        }
+        /**
+         * Initialize mockup events
+         * Initialiser les événements mockup
+         */
+        initialize() {
+          this.setupSessionTabs();
+          this.setupProviderSelection();
+          this.setupSendButton();
+          this.setupTextarea();
+          this.setupDragAndDrop();
+        }
+        /**
+         * Setup session tabs
+         * Configurer les onglets de session
+         */
+        setupSessionTabs() {
+          const tabs = document.querySelectorAll(".tab");
+          tabs.forEach((tab) => {
+            tab.addEventListener("click", () => {
+              this.switchToSession(tab.dataset.session);
+            });
+          });
+        }
+        /**
+         * Setup provider selection
+         * Configurer la sélection de fournisseur
+         */
+        setupProviderSelection() {
+          const providerSelect = document.getElementById("provider");
+          const modelSelect = document.getElementById("model");
+          if (providerSelect && modelSelect) {
+            providerSelect.addEventListener("change", () => {
+              this.updateModels();
+            });
+            this.updateModels();
+          }
+        }
+        /**
+         * Update models based on selected provider
+         * Mettre à jour les modèles selon le fournisseur sélectionné
+         */
+        updateModels() {
+          const providerSelect = document.getElementById("provider");
+          const modelSelect = document.getElementById("model");
+          if (providerSelect && modelSelect) {
+            const provider = providerSelect.value;
+            const models = this.modelsByProvider[provider] || [];
+            modelSelect.innerHTML = models.map(
+              (model) => `<option value="${model}">${model}</option>`
+            ).join("");
+            if (models.length > 0) {
+              modelSelect.value = models[0];
+            }
+          }
+        }
+        /**
+         * Setup send button
+         * Configurer le bouton d'envoi
+         */
+        setupSendButton() {
+          const sendBtn = document.getElementById("send-btn");
+          const textarea = document.getElementById("prompt-input");
+          if (sendBtn && textarea) {
+            sendBtn.addEventListener("click", () => {
+              this.sendMessage();
+            });
+            textarea.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                this.sendMessage();
+              }
+            });
+          }
+        }
+        /**
+         * Setup textarea
+         * Configurer la zone de texte
+         */
+        setupTextarea() {
+          const textarea = document.getElementById("prompt-input");
+          if (textarea) {
+            textarea.addEventListener("input", () => {
+              textarea.style.height = "auto";
+              textarea.style.height = Math.min(textarea.scrollHeight, 160) + "px";
+            });
+            textarea.focus();
+          }
+        }
+        /**
+         * Setup drag and drop for tabs
+         * Configurer le drag & drop pour les onglets
+         */
+        setupDragAndDrop() {
+          const tabs = document.querySelectorAll(".tab");
+          tabs.forEach((tab) => {
+            tab.addEventListener("dragstart", (e) => {
+              tab.classList.add("dragging");
+              e.dataTransfer.effectAllowed = "move";
+              e.dataTransfer.setData("text/html", tab.outerHTML);
+            });
+            tab.addEventListener("dragend", () => {
+              tab.classList.remove("dragging");
+            });
+            tab.addEventListener("dragover", (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+            });
+            tab.addEventListener("drop", (e) => {
+              e.preventDefault();
+              const draggedTab = document.querySelector(".tab.dragging");
+              if (draggedTab && draggedTab !== tab) {
+                const parent = tab.parentNode;
+                const nextSibling = tab.nextSibling;
+                parent.insertBefore(draggedTab, nextSibling);
+              }
+            });
+          });
+        }
+        /**
+         * Switch to session
+         * Basculer vers une session
+         */
+        switchToSession(sessionId) {
+          this.currentSession = sessionId;
+          document.querySelectorAll(".tab").forEach((tab) => {
+            tab.classList.remove("active");
+          });
+          const activeTab = document.querySelector(`[data-session="${sessionId}"]`);
+          if (activeTab) {
+            activeTab.classList.add("active");
+          }
+          if (window.MockupMessageManager) {
+            window.MockupMessageManager.switchToSession(sessionId);
+          }
+        }
+        /**
+         * Send message
+         * Envoyer un message
+         */
+        sendMessage() {
+          const textarea = document.getElementById("prompt-input");
+          const providerSelect = document.getElementById("provider");
+          const modelSelect = document.getElementById("model");
+          if (!textarea || !textarea.value.trim()) {
+            return;
+          }
+          const message = textarea.value.trim();
+          const provider = providerSelect?.value || "DeepSeek";
+          modelSelect?.value || "coder";
+          if (window.MockupMessageManager) {
+            window.MockupMessageManager.addUserMessage(message);
+          }
+          textarea.value = "";
+          textarea.style.height = "auto";
+          if (window.vscode) {
+            window.vscode.postMessage({
+              type: "executePrompt",
+              prompt: message,
+              routingMode: "auto",
+              provider,
+              conversationContext: []
+            });
+          }
+        }
+        /**
+         * Handle streaming chunk
+         * Gérer un chunk de streaming
+         */
+        handleStreamingChunk(chunk) {
+          if (window.MockupMessageManager) {
+            if (!window.MockupMessageManager.streamingMessage) {
+              window.MockupMessageManager.startAIResponse();
+            }
+            window.MockupMessageManager.addStreamingChunk(chunk);
+          }
+        }
+        /**
+         * Handle streaming complete
+         * Gérer la fin du streaming
+         */
+        handleStreamingComplete() {
+          if (window.MockupMessageManager) {
+            window.MockupMessageManager.completeAIResponse();
+          }
+        }
+        /**
+         * Update metrics
+         * Mettre à jour les métriques
+         */
+        updateMetrics(metrics) {
+          const contextTokens = document.getElementById("context-tokens");
+          const costInfo = document.getElementById("cost-info");
+          const tokensInfo = document.getElementById("tokens-info");
+          const latencyInfo = document.getElementById("latency-info");
+          if (contextTokens) contextTokens.textContent = `${metrics.tokens || 0} tokens`;
+          if (costInfo) costInfo.textContent = `$${metrics.cost || "0.00"}`;
+          if (tokensInfo) tokensInfo.textContent = `${metrics.tokens || 0}`;
+          if (latencyInfo) latencyInfo.textContent = `${metrics.latency || 0}s`;
+        }
+      };
+      mockup_events_exact_default = new MockupEventsManagerExact();
+    }
+  });
+
+  // media/modules/api-model-checker.js
+  var APIModelChecker, api_model_checker_default;
+  var init_api_model_checker = __esm({
+    "media/modules/api-model-checker.js"() {
+      APIModelChecker = class {
+        constructor() {
+          this.cache = /* @__PURE__ */ new Map();
+          this.cacheTimeout = 5 * 60 * 1e3;
+        }
+        /**
+         * Vérifier les modèles disponibles pour un fournisseur
+         */
+        async checkProviderModels(provider) {
+          const cacheKey = `models_${provider}`;
+          const cached = this.cache.get(cacheKey);
+          if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
+            return cached.data;
+          }
+          try {
+            const models = await this.fetchProviderModels(provider);
+            this.cache.set(cacheKey, {
+              data: models,
+              timestamp: Date.now()
+            });
+            return models;
+          } catch (error) {
+            console.error(`Error checking models for ${provider}:`, error);
+            return this.getDefaultModels(provider);
+          }
+        }
+        /**
+         * Récupérer les modèles depuis l'API du fournisseur
+         */
+        async fetchProviderModels(provider) {
+          const vscode = window.acquireVsCodeApi?.();
+          if (!vscode) {
+            throw new Error("VS Code API not available");
+          }
+          return new Promise((resolve, reject) => {
+            const messageId = Date.now().toString();
+            const handleMessage = (event) => {
+              const message = event.data;
+              if (message.type === "apiModelsResponse" && message.messageId === messageId) {
+                window.removeEventListener("message", handleMessage);
+                if (message.success) {
+                  resolve(message.models);
+                } else {
+                  reject(new Error(message.error || "Failed to fetch models"));
+                }
+              }
+            };
+            window.addEventListener("message", handleMessage);
+            vscode.postMessage({
+              type: "checkProviderModels",
+              provider,
+              messageId
+            });
+            setTimeout(() => {
+              window.removeEventListener("message", handleMessage);
+              reject(new Error("Timeout while fetching models"));
+            }, 1e4);
+          });
+        }
+        /**
+         * Modèles par défaut pour chaque fournisseur (utilisés uniquement en cas d'échec de l'API)
+         */
+        getDefaultModels(provider) {
+          const defaultModels = {
+            openai: [
+              { value: "gpt-4o", label: "GPT-4o", description: "Latest multimodal model with vision capabilities", context: 128e3, maxTokens: 4096 },
+              { value: "gpt-4o-mini", label: "GPT-4o Mini", description: "Efficient and cost-effective GPT-4o variant", context: 128e3, maxTokens: 16384 },
+              { value: "gpt-4-turbo", label: "GPT-4 Turbo", description: "Enhanced GPT-4 with improved performance", context: 128e3, maxTokens: 4096 },
+              { value: "gpt-3.5-turbo", label: "GPT-3.5 Turbo", description: "Fast and cost-effective model for simple tasks", context: 16385, maxTokens: 4096 }
+            ],
+            anthropic: [
+              { value: "claude-3-5-sonnet-20241022", label: "Claude 3.5 Sonnet", description: "Latest Claude model with enhanced reasoning", context: 2e5, maxTokens: 8192 },
+              { value: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku", description: "Fast and efficient Claude model", context: 2e5, maxTokens: 8192 },
+              { value: "claude-3-opus-20240229", label: "Claude 3 Opus", description: "Most capable Claude model for complex reasoning", context: 2e5, maxTokens: 4096 },
+              { value: "claude-3-sonnet-20240229", label: "Claude 3 Sonnet", description: "Balanced Claude model for general tasks", context: 2e5, maxTokens: 4096 },
+              { value: "claude-3-haiku-20240307", label: "Claude 3 Haiku", description: "Fastest Claude model for simple tasks", context: 2e5, maxTokens: 4096 }
+            ],
+            deepseek: [
+              { value: "deepseek-chat", label: "DeepSeek Chat", description: "General purpose chat model", context: 32768, maxTokens: 4096 },
+              { value: "deepseek-coder", label: "DeepSeek Coder", description: "Specialized for coding tasks", context: 32768, maxTokens: 4096 }
+            ],
+            moonshot: [
+              { value: "moonshot-v1-8k", label: "Moonshot v1 8k", description: "Standard Moonshot model with 8k context", context: 8192, maxTokens: 4096 },
+              { value: "moonshot-v1-32k", label: "Moonshot v1 32k", description: "Extended context Moonshot model", context: 32768, maxTokens: 4096 },
+              { value: "moonshot-v1-128k", label: "Moonshot v1 128k", description: "Large context Moonshot model", context: 131072, maxTokens: 4096 },
+              { value: "moonshot-chat", label: "Moonshot Chat", description: "Optimized for conversational tasks", context: 8192, maxTokens: 4096 }
+            ],
+            ollama: []
+          };
+          return defaultModels[provider] || [];
+        }
+        /**
+         * Mettre à jour la liste des modèles dans l'interface
+         */
+        async updateModelDropdown(provider) {
+          const modelSelect = document.getElementById("model");
+          if (!modelSelect) return;
+          modelSelect.innerHTML = '<option value="">Chargement des mod\xE8les...</option>';
+          modelSelect.disabled = true;
+          try {
+            const models = await this.checkProviderModels(provider);
+            modelSelect.innerHTML = "";
+            if (models.length === 0) {
+              modelSelect.innerHTML = '<option value="">Aucun mod\xE8le disponible</option>';
+            } else {
+              models.forEach((model) => {
+                const option = document.createElement("option");
+                option.value = model.value;
+                option.textContent = model.label;
+                option.title = model.description || "";
+                modelSelect.appendChild(option);
+              });
+              if (models.length > 0) {
+                modelSelect.value = models[0].value;
+              }
+            }
+          } catch (error) {
+            console.error("Error updating model dropdown:", error);
+            modelSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+          } finally {
+            modelSelect.disabled = false;
+          }
+        }
+        /**
+         * Vérifier tous les fournisseurs et mettre à jour l'interface
+         */
+        async refreshAllModels() {
+          const providers = ["openai", "anthropic", "deepseek", "moonshot", "ollama"];
+          for (const provider of providers) {
+            try {
+              await this.checkProviderModels(provider);
+              console.log(`Models for ${provider} refreshed`);
+            } catch (error) {
+              console.error(`Failed to refresh models for ${provider}:`, error);
+            }
+          }
+        }
+        /**
+         * Obtenir les informations détaillées d'un modèle
+         */
+        async getModelInfo(provider, modelId) {
+          try {
+            const models = await this.checkProviderModels(provider);
+            return models.find((model) => model.value === modelId);
+          } catch (error) {
+            console.error("Error getting model info:", error);
+            return null;
+          }
+        }
+        /**
+         * Vider le cache
+         */
+        clearCache() {
+          this.cache.clear();
+        }
+        /**
+         * Vider le cache pour un fournisseur spécifique
+         */
+        clearProviderCache(provider) {
+          this.cache.delete(`models_${provider}`);
+        }
+      };
+      api_model_checker_default = new APIModelChecker();
+    }
+  });
+
   // media/main.js
   var require_main = __commonJS({
     "media/main.js"() {
@@ -1369,17 +2094,45 @@ var AIAnalytics = (function () {
       init_message_manager();
       init_settings_manager();
       init_file_autocomplete_manager();
+      init_mockup_message_manager();
+      init_mockup_events_exact();
+      init_api_model_checker();
       (function() {
         const stateManager = state_manager_default;
         const eventManager = event_manager_default;
         const messageManager = message_manager_default;
         const settingsManager = settings_manager_default;
         const fileAutocompleteManager = file_autocomplete_manager_default;
+        const mockupMessageManager = mockup_message_manager_default;
+        const mockupEventsManagerExact = mockup_events_exact_default;
+        const apiModelChecker = api_model_checker_default;
+        function resetAllStates() {
+          console.log("AI Command Bar: Resetting all states...");
+          const sendBtn = document.getElementById("sendBtn");
+          if (sendBtn) {
+            sendBtn.disabled = false;
+          }
+          const conversationContent = document.getElementById("conversation-content");
+          if (conversationContent) {
+            const streamingElements = conversationContent.querySelectorAll(".streaming-response, .thinking-animation, .progress-bar, .loading-indicator");
+            streamingElements.forEach((el) => el.remove());
+          }
+          const progressBars = document.querySelectorAll(".progress-bar, .loading-indicator, .blue-line");
+          progressBars.forEach((bar) => bar.remove());
+          console.log("AI Command Bar: States reset complete");
+        }
         document.addEventListener("DOMContentLoaded", () => {
+          resetAllStates();
           initializeDOMElements();
           initializeEventListeners();
           initializeAutoExpandTextarea();
           initializeApplication();
+          if (document.querySelector(".chat-bar")) {
+            console.log("Initializing mockup interface...");
+            mockupEventsManagerExact.initialize();
+            window.MockupMessageManager = mockupMessageManager;
+            window.MockupEventsManagerExact = mockupEventsManagerExact;
+          }
         });
         function initializeDOMElements() {
           console.log("Initializing DOM elements...");
@@ -1412,6 +2165,23 @@ var AIAnalytics = (function () {
         }
         function initializeEventListeners() {
           eventManager.initializeEventListeners();
+          const newSessionBtn = stateManager.getDomElement("newSessionBtn");
+          if (newSessionBtn) {
+            newSessionBtn.addEventListener("click", createNewSession);
+          }
+          const modeSelect = document.getElementById("mode-select");
+          if (modeSelect) {
+            modeSelect.addEventListener("change", handleModeChange);
+          }
+          const providerSelect = document.getElementById("provider");
+          if (providerSelect) {
+            providerSelect.addEventListener("change", handleProviderChange);
+          }
+          const saveConfigBtn = document.getElementById("save-config-btn");
+          if (saveConfigBtn) {
+            saveConfigBtn.addEventListener("click", handleSaveConfig);
+            loadBookmarkState();
+          }
         }
         function initializeAutoExpandTextarea() {
           const promptInput = stateManager.getDomElement("promptInput");
@@ -1426,6 +2196,12 @@ var AIAnalytics = (function () {
           settingsManager.loadSettings();
           loadMetricsFromStorage();
           createInitialSession();
+          loadSavedConfig();
+          const providerSelect = document.getElementById("provider");
+          if (providerSelect) {
+            const defaultProvider = providerSelect.value.toLowerCase();
+            apiModelChecker.updateModelDropdown(defaultProvider);
+          }
         }
         function createInitialSession() {
           const sessions = stateManager.getState("sessions");
@@ -1479,6 +2255,12 @@ var AIAnalytics = (function () {
         window.addEventListener("message", (event) => {
           const message = event.data;
           switch (message.type) {
+            case "resetLoadingState":
+              console.log("Received resetLoadingState message, resetting all states...");
+              resetAllStates();
+              messageManager.stopThinkingAnimation();
+              messageManager.stopStreamingResponse();
+              break;
             case "executionStarted":
               const sendBtn = stateManager.getDomElement("sendBtn");
               if (sendBtn) {
@@ -1491,6 +2273,9 @@ var AIAnalytics = (function () {
               break;
             case "streamingChunk":
               messageManager.updateStreamingResponse(message.content, message.provider);
+              if (window.MockupEventsManagerExact) {
+                window.MockupEventsManagerExact.handleStreamingChunk(message.content);
+              }
               break;
             case "executionCompleted":
               messageManager.stopStreamingResponse();
@@ -1503,6 +2288,14 @@ var AIAnalytics = (function () {
                 model: modelName,
                 cacheHit: message.cacheHit
               });
+              if (window.MockupEventsManagerExact) {
+                window.MockupEventsManagerExact.handleStreamingComplete();
+                window.MockupEventsManagerExact.updateMetrics({
+                  cost: message.cost,
+                  tokens: message.tokens,
+                  latency: message.latency
+                });
+              }
               const sendBtn2 = stateManager.getDomElement("sendBtn");
               if (sendBtn2) {
                 sendBtn2.disabled = false;
@@ -1578,6 +2371,189 @@ var AIAnalytics = (function () {
             type: "saveMetrics",
             metrics: sessionMetrics
           });
+        }
+        function createNewSession() {
+          const sessions = stateManager.getState("sessions") || [];
+          const sessionCounter = sessions.length + 1;
+          const sessionId = "session-" + Date.now();
+          const sessionName = `Session ${sessionCounter}`;
+          const newSession = {
+            id: sessionId,
+            name: sessionName,
+            messages: [],
+            createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+            isActive: true
+          };
+          sessions.forEach((session) => {
+            session.isActive = false;
+          });
+          sessions.push(newSession);
+          stateManager.setState("sessions", sessions);
+          stateManager.setState("currentSessionId", sessionId);
+          messageManager.createSessionTab(newSession);
+          const conversationContent = stateManager.getDomElement("conversationContent");
+          if (conversationContent) {
+            conversationContent.innerHTML = "";
+          }
+          console.log("New session created:", sessionName);
+        }
+        function handleModeChange() {
+          const modeSelect = document.getElementById("mode-select");
+          const manualModeDropdowns = document.getElementById("manual-mode-dropdowns");
+          const autoModeDropdowns = document.getElementById("auto-mode-dropdowns");
+          if (!modeSelect || !manualModeDropdowns || !autoModeDropdowns) return;
+          const selectedMode = modeSelect.value;
+          if (selectedMode === "manual") {
+            manualModeDropdowns.style.display = "flex";
+            manualModeDropdowns.classList.remove("hidden");
+            autoModeDropdowns.style.display = "none";
+            autoModeDropdowns.classList.add("hidden");
+            console.log("Mode switched to Manual");
+          } else if (selectedMode === "auto") {
+            manualModeDropdowns.style.display = "none";
+            manualModeDropdowns.classList.add("hidden");
+            autoModeDropdowns.style.display = "flex";
+            autoModeDropdowns.classList.remove("hidden");
+            console.log("Mode switched to Auto");
+          }
+        }
+        function handleProviderChange() {
+          const providerSelect = document.getElementById("provider");
+          if (!providerSelect) return;
+          const selectedProvider = providerSelect.value.toLowerCase();
+          console.log("Provider changed to:", selectedProvider);
+          apiModelChecker.updateModelDropdown(selectedProvider);
+        }
+        function saveBookmark() {
+          const config = getCurrentConfiguration();
+          const bookmarkKey = generateBookmarkKey(config);
+          localStorage.setItem(bookmarkKey, JSON.stringify(config));
+          const saveBtn = document.getElementById("save-config-btn");
+          if (saveBtn) {
+            saveBtn.classList.add("bookmarked");
+            saveBtn.title = "Retirer des favoris";
+          }
+          showNotification("Configuration sauvegard\xE9e", "success");
+        }
+        function removeBookmark() {
+          const config = getCurrentConfiguration();
+          const bookmarkKey = generateBookmarkKey(config);
+          localStorage.removeItem(bookmarkKey);
+          const saveBtn = document.getElementById("save-config-btn");
+          if (saveBtn) {
+            saveBtn.classList.remove("bookmarked");
+            saveBtn.title = "Marquer comme favori";
+          }
+          showNotification("Configuration supprim\xE9e", "info");
+        }
+        function loadBookmarkState() {
+          const saveBtn = document.getElementById("save-config-btn");
+          if (!saveBtn) return;
+          const config = getCurrentConfiguration();
+          const bookmarkKey = generateBookmarkKey(config);
+          const isBookmarked = localStorage.getItem(bookmarkKey) !== null;
+          if (isBookmarked) {
+            saveBtn.classList.add("bookmarked");
+            saveBtn.title = "Retirer des favoris";
+          } else {
+            saveBtn.classList.remove("bookmarked");
+            saveBtn.title = "Marquer comme favori";
+          }
+        }
+        function showNotification(message, type = "info") {
+          const toast = document.getElementById("notification-toast");
+          const messageEl = document.getElementById("notification-message");
+          if (!toast || !messageEl) return;
+          toast.classList.remove("show", "success", "info", "error");
+          messageEl.textContent = message;
+          toast.classList.add(type);
+          setTimeout(() => {
+            toast.classList.add("show");
+          }, 10);
+          setTimeout(() => {
+            toast.classList.remove("show");
+          }, 2e3);
+        }
+        function generateBookmarkKey(config) {
+          return `bookmark_${config.mode || "manual"}_${config.provider || "auto"}_${config.model || "default"}`;
+        }
+        function getCurrentConfiguration() {
+          const modeSelect = document.getElementById("mode-select");
+          const providerSelect = document.getElementById("provider");
+          const modelSelect = document.getElementById("model");
+          const taskSelect = document.getElementById("task-select");
+          const routingModeSelect = document.getElementById("routing-mode");
+          return {
+            mode: modeSelect?.value || "manual",
+            provider: providerSelect?.value || "auto",
+            model: modelSelect?.value || "default",
+            task: taskSelect?.value || "general",
+            routingMode: routingModeSelect?.value || "normal"
+          };
+        }
+        function handleSaveConfig() {
+          const saveBtn = document.getElementById("save-config-btn");
+          if (!saveBtn) return;
+          const isBookmarked = saveBtn.classList.contains("bookmarked");
+          if (isBookmarked) {
+            saveBtn.classList.remove("bookmarked");
+            saveBtn.title = "Marquer comme favori";
+            removeBookmark();
+          } else {
+            saveBtn.classList.add("bookmarked");
+            saveBtn.title = "Retirer des favoris";
+            saveBookmark();
+          }
+        }
+        function loadSavedConfig() {
+          try {
+            const lastMode = localStorage.getItem("ai-command-bar-last-mode") || "auto";
+            const modeSelect = document.getElementById("mode-select");
+            if (modeSelect) {
+              modeSelect.value = lastMode;
+              handleModeChange();
+            }
+            if (lastMode === "manual") {
+              const manualConfig = localStorage.getItem("ai-command-bar-config-manual");
+              if (manualConfig) {
+                const config = JSON.parse(manualConfig);
+                console.log("Configuration manuelle charg\xE9e:", config);
+                if (config.provider) {
+                  const providerSelect = document.getElementById("provider");
+                  if (providerSelect) {
+                    providerSelect.value = config.provider;
+                    handleProviderChange();
+                  }
+                }
+                if (config.model) {
+                  const modelSelect = document.getElementById("model");
+                  if (modelSelect) {
+                    modelSelect.value = config.model;
+                  }
+                }
+              }
+            } else if (lastMode === "auto") {
+              const autoConfig = localStorage.getItem("ai-command-bar-config-auto");
+              if (autoConfig) {
+                const config = JSON.parse(autoConfig);
+                console.log("Configuration auto charg\xE9e:", config);
+                if (config.task) {
+                  const taskSelect = document.getElementById("task-select");
+                  if (taskSelect) {
+                    taskSelect.value = config.task;
+                  }
+                }
+                if (config.routing) {
+                  const routingSelect = document.getElementById("routing-mode");
+                  if (routingSelect) {
+                    routingSelect.value = config.routing;
+                  }
+                }
+              }
+            }
+          } catch (error) {
+            console.error("Erreur lors du chargement de la configuration:", error);
+          }
         }
       })();
     }

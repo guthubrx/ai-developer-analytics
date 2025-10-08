@@ -43,12 +43,13 @@ export class AICoachProvider implements vscode.WebviewViewProvider {
         );
     }
 
-    private _getHtmlForWebview(_webview: vscode.Webview): string {
+    private _getHtmlForWebview(webview: vscode.Webview): string {
         return `
             <!DOCTYPE html>
             <html lang="en">
             <head>
                 <meta charset="UTF-8">
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-eval';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>AI Coach</title>
                 <style>

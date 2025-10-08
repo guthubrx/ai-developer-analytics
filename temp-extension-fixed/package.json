@@ -1,0 +1,39 @@
+{
+  "name": "ai-developer-analytics",
+  "displayName": "AI Developer Analytics",
+  "description": "AI Command Bar Extension - Fixed Version",
+  "version": "0.3.2",
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/ai-developer-analytics"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ai-analytics",
+          "title": "AI Analytics",
+          "icon": "$(graph)"
+        }
+      ]
+    },
+    "views": {
+      "ai-analytics": [
+        {
+          "id": "ai-command-bar",
+          "name": "AI Command Bar"
+        }
+      ]
+    }
+  }
+}

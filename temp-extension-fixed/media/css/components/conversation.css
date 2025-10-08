@@ -1,0 +1,235 @@
+/* Conversation Components for AI Developer Analytics */
+
+/* Conversation Container */
+.conversation-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  margin-bottom: 0;
+  background: transparent;
+  max-height: calc(100vh - 400px);
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.conversation-content {
+  padding: var(--space-xs) var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+/* Message Components */
+.message {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  animation: fadeInUp 0.3s ease-out;
+  margin-bottom: var(--space-sm);
+}
+
+.message-header {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+  width: 100%;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: flex-end;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-top: 4px;
+  margin-left: calc(28px + var(--space-md)); /* Align with message content */
+}
+
+.timestamp {
+  text-align: right;
+}
+
+.message-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.provider-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.provider-logo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.message.user .message-avatar {
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+}
+
+.message.ai .message-avatar {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+.model-name {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border-primary);
+}
+
+.message-text {
+  line-height: 1.6;
+}
+
+.message.user .message-content {
+  background: rgba(92, 182, 255, 0.08);
+  border: 1px solid rgba(92, 182, 255, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-left: 0;
+}
+
+.message.ai .message-content {
+  padding: var(--space-md) 0;
+}
+
+.message.ai .message-text {
+  line-height: 1.6;
+}
+
+/* Message States */
+.message.ai.thinking {
+  opacity: 0.7;
+  animation: thinkingPulse 2s ease-in-out infinite;
+  margin-bottom: var(--space-sm);
+}
+
+.message.ai.streaming .streaming-cursor {
+  animation: cursorBlink 1s infinite;
+  color: var(--text-primary);
+}
+
+/* Session Tabs */
+.session-tabs-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.session-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  flex: 1;
+  overflow-x: auto;
+}
+
+.session-tab {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.session-tab:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.session-tab.active {
+  background: var(--accent-primary);
+  color: white;
+  border-color: var(--accent-primary);
+}
+
+.session-tab-close {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: all var(--transition-fast);
+}
+
+.session-tab-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Compact Mode */
+.compact-mode .message {
+  gap: var(--space-sm);
+}
+
+.compact-mode .message-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: var(--font-size-xs);
+}
+
+/* Scrollbar Styling */
+.conversation-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.conversation-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.conversation-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.conversation-container::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 0;
+}
+
+.conversation-container::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}

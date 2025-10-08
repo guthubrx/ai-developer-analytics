@@ -1,57 +1,74 @@
-# Dependencies
-node_modules/**
-!node_modules/sql.js/**
-!node_modules/crypto-js/**
-!node_modules/axios/**
-!node_modules/lru-cache/**
-!node_modules/openai/**
-!node_modules/@anthropic-ai/**
+# Fichiers de développement
+.vscode/
+.vscode-test/
+node_modules/
+src/
+scripts/
+backups/
+temp-extension/
+temp-extension-fixed/
 
-# Build output
-# out/**  # Commented out to include compiled extension
+# Fichiers de configuration de développement
+tsconfig.json
+tsconfig.build.json
+tsup.config.js
+eslint.config.js
+vitest.config.js
 
-# TypeScript
-src/**
-*.ts
-*.tsx
+# Fichiers de test
+test-*.js
+test-*.ts
+**/*.test.js
+**/*.test.ts
+**/*.spec.js
+**/*.spec.ts
 
-# Tests
-test/**
-*.test.*
-
-# Documentation
-docs/**
-*.md
-
-# Configuration files
-*.config.js
-*.config.ts
-
-# Git
-.git/**
-
-# VS Code
-.vscode/**
-
-# Package files
-*.tgz
-*.vsix
-
-# OS files
+# Fichiers temporaires
+*.tmp
+*.temp
+*.log
+*.map
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
+# Fichiers de documentation de développement
+docs/
+prompts/
+PROJET-PLAN.md
+DEEPSEEK_TIMEOUT_FIX.md
+MCP_CAPABILITIES.md
+css-refactoring-plan.md
 
-# Temporary files
-tmp/**
+# Fichiers de build et de développement
+*.vsix
+dependency-lock.json
+dependency-report.json
+backups/
 
-# Media files
-# media/**  # Commented out to include icon
+# Fichiers de configuration locale
+.env
+.env.local
+.env.development
+.env.test
 
-# Prompts
-# prompts/**  # Commented out to include prompts
+# Fichiers de cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.vuepress/dist/
 
-# MCP Server
-server-mcp/**
+# Fichiers de sauvegarde
+*.bak
+*.backup
+*.old
+
+# Fichiers de développement spécifiques
+fix-deepseek-timeout.sh
+install-and-reload.sh
+update-build-date.js
+
+# Fichiers de mockup et de test
+media/mockups/
+media/test-*.html
+media/modules/mockup-*.js

@@ -118,7 +118,7 @@ textarea::placeholder {
 }
 
 .vscode-theme .command-input-wrapper:focus-within {
-  border-color: var(--vscode-focusBorder);
+  border-color: var(--vscode-panel-border);
 }
 
 .vscode-theme .file-autocomplete {

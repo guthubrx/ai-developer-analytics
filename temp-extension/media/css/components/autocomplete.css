@@ -1,0 +1,179 @@
+/* Autocomplete Components for AI Developer Analytics */
+
+/* File Autocomplete Container */
+.file-autocomplete {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* File Autocomplete Input */
+.file-autocomplete input {
+  width: 100%;
+  padding: var(--space-sm);
+  background: var(--bg-secondary);
+  border: none;
+  border-bottom: 1px solid var(--border-primary);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+}
+
+.file-autocomplete input:focus {
+  outline: none;
+  background: var(--bg-tertiary);
+}
+
+/* File Results Container */
+.file-results {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+/* File Result Item */
+.file-result-item {
+  padding: var(--space-sm);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-primary);
+  font-size: var(--font-size-sm);
+  transition: all var(--transition-fast);
+}
+
+.file-result-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.file-result-item:last-child {
+  border-bottom: none;
+}
+
+/* File Result States */
+.file-result-item.selected {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.file-result-item.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.file-result-item.disabled:hover {
+  background: inherit;
+}
+
+/* File Type Indicators */
+.file-result-item[data-type="file"]::before {
+  content: "📄";
+  margin-right: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.file-result-item[data-type="folder"]::before {
+  content: "📁";
+  margin-right: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.file-result-item[data-type="image"]::before {
+  content: "🖼️";
+  margin-right: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+.file-result-item[data-type="code"]::before {
+  content: "💻";
+  margin-right: var(--space-xs);
+  font-size: var(--font-size-xs);
+}
+
+/* File Path Display */
+.file-path {
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  margin-top: 2px;
+}
+
+/* Autocomplete Positioning */
+.file-autocomplete.position-top {
+  bottom: 100%;
+  top: auto;
+}
+
+.file-autocomplete.position-bottom {
+  top: 100%;
+  bottom: auto;
+}
+
+.file-autocomplete.position-left {
+  right: auto;
+  left: 0;
+}
+
+.file-autocomplete.position-right {
+  left: auto;
+  right: 0;
+}
+
+/* Autocomplete Scrollbar */
+.file-autocomplete {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+.file-autocomplete::-webkit-scrollbar {
+  width: 6px;
+}
+
+.file-autocomplete::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-autocomplete::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+.file-autocomplete::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+/* Autocomplete Animations */
+.file-autocomplete {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Autocomplete Responsive */
+@media (max-width: 768px) {
+  .file-autocomplete {
+    max-height: 150px;
+    font-size: var(--font-size-xs);
+  }
+
+  .file-result-item {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .file-autocomplete input {
+    font-size: var(--font-size-xs);
+    padding: var(--space-xs) var(--space-sm);
+  }
+}

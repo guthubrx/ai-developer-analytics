@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cursor Chat Mock – session 1 ajustée</title>
+<style>
+:root {
+  --bg:#0e0e0f;--panel:#1a1a1d;--border:#2a2a2f;--text:#e8e8ea;
+  --accent:#3d7bfd;--radius:10px;--space-sm:8px;--space-md:12px;
+  font-family:"SF Pro Text","Inter",system-ui,sans-serif;
+}
+body{margin:0;background:var(--bg);color:var(--text);display:flex;height:100vh;}
+.chat-bar{display:flex;flex-direction:column;width:460px;background:var(--panel);
+border-left:1px solid var(--border);height:100%}
+
+/* Onglets */
+.tabs{display:flex;overflow-x:auto;background:#1c1c1f;border-bottom:1px solid #2b2b30;}
+.tab{padding:10px 16px;font-size:15px;color:#c6c6c9;border-top-left-radius:6px;
+border-top-right-radius:6px;cursor:grab;white-space:nowrap;}
+.tab.active{background:#2f3648;color:#fff;border-bottom:2px solid var(--accent);}
+.tab:hover:not(.active){background:#2a2a2f;}
+.tab.dragging{opacity:.7;transform:scale(1.03);}
+
+/* Messages */
+.chat-messages{flex:1;overflow-y:auto;padding:var(--space-md);
+display:flex;flex-direction:column;gap:var(--space-sm);}
+.message.user{background:#24314a;border:1px solid #314a78;border-radius:var(--radius);
+padding:var(--space-sm)var(--space-md);font-size:14px;white-space:pre-wrap;line-height:1.35;}
+
+/* ✅ Correction — suppression des retours à la ligne intempestifs */
+.message.ai {
+  display: flex;
+  flex-direction: column;
+  font-size: 0;
+  line-height: 1.35;
+  width: 100%;
+  background: transparent;
+  padding: var(--space-sm) 0;
+}
+.message.ai > * {
+  font-size: 14px;
+  display: inline; /* ✅ empêche les retours à la ligne automatiques */
+  width: auto;
+}
+/* ✅ Exceptions : vraies boîtes = blocs verticaux */
+.message.ai > .diff-box,
+.message.ai > .command-block,
+.message.ai > pre {
+  display: block;
+  width: 100%;
+}
+
+.message pre{background:#141416;border:1px solid #2c2c31;border-radius:4px;
+font-family:"JetBrains Mono",monospace;font-size:13px;
+color:#d0d0d3;overflow-x:hidden;white-space:pre-wrap;line-height:1.35;margin:0;padding:5px 8px;}
+
+/* Diff Git */
+.message.ai.diff pre.diff {
+  display:flex;
+  flex-direction:column;
+  padding:0;
+  margin:0;
+  background:#141416;
+  line-height:1.35;
+}
+.message.ai.diff pre.diff *{margin:0;display:block;}
+.diff{border-left:3px solid transparent;margin:0;}
+.diff ins,.diff del{
+  display:block;padding:0 6px 0 10px;
+  font-family:"JetBrains Mono",monospace;border-left:2px solid transparent;
+  line-height:1.35;}
+.diff ins{color:#b3ffb3;background:#132a17;border-left-color:#1fc74a;}
+.diff del{color:#ff9a9a;background:#2a1317;border-left-color:#ff4444;}
+
+/* 🔧 surlignage fichier adouci */
+.file-ref{
+  font-family:"JetBrains Mono",monospace;
+  font-size:13px;
+  color:#cfcfd2;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:3px;
+  padding:1px 5px 2px 5px;
+}
+
+/* 🔹 Boîte diff stylisée avec header */
+.diff-box {
+  border:1px solid #2c2c31;
+  border-radius:6px;
+  overflow:hidden;
+  margin:8px 0;
+  background:#141416;
+}
+.diff-header {
+  background:#1b1b1c;
+  border-bottom:1px solid #2a2a2f;
+  color:#e0e0e2;
+  font-size:13px;
+  padding:5px 10px 4px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  font-family:"JetBrains Mono",monospace;
+}
+.diff-header-left {
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.diff-header-right {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#888;
+  font-family:"JetBrains Mono",monospace;
+}
+.diff-header-right span {
+  font-size:12px;
+  color:#79c279;
+}
+.diff-header-right .minus { color:#d67272; }
+.diff-icon {
+  opacity:.7;
+  font-size:13px;
+  cursor:pointer;
+}
+.diff-icon:hover { opacity:1; }
+.diff-content {
+  padding:0;
+}
+.diff-content pre.diff {
+  border:none;
+  background:#141416;
+  padding:4px 0 6px;
+  margin:0;
+  font-size:13px;
+  line-height:1.35;
+}
+
+/* Bloc Auto-Ran */
+.command-block{
+  background:#111112;
+  border:1px solid #2a2a2f;
+  border-radius:6px;
+  overflow:hidden;
+  width:100%;
+  margin:8px 0;
+}
+.command-header{
+  background:#1a1a1b;
+  padding:3px 10px;
+  font-size:13px;
+  color:#cfcfcf;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  user-select:none;
+  cursor:pointer;
+  font-weight:500;
+  border-bottom:1px solid #202024;
+}
+.command-header span strong{color:#fff;}
+.command-toggle{color:#7f7f82;font-size:14px;transition:transform .2s ease;}
+.command-toggle.collapsed{transform:rotate(-90deg);}
+.command-body{
+  background:#0f0f10;
+  font-family:"JetBrains Mono",monospace;
+  font-size:13px;
+  line-height:1.35;
+  padding:6px 12px 7px 12px;
+  color:#d1d1d4;
+  white-space:pre-wrap;
+  overflow-x:hidden;
+  transition:max-height .3s ease,opacity .3s ease;
+}
+.command-body .cmd{color:#7fff7f;}
+.command-body .comment{color:#888;}
+.command-body.partial{
+  position:relative;
+  max-height:7em;
+  overflow:hidden;
+}
+.command-body.partial::after{
+  content:"";
+  position:absolute;
+  bottom:0;
+  left:0;
+  right:0;
+  height:2.5em;
+  background:linear-gradient(to bottom,rgba(15,15,17,0),rgba(15,15,17,1));
+}
+.command-body.collapsed{max-height:none;}
+
+/* Zone saisie */
+.chat-input{border-top:1px solid var(--border);padding:var(--space-sm)var(--space-md);
+display:flex;flex-direction:column;background:#171719;gap:var(--space-sm);}
+.chat-config{display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap;}
+.chat-entry{display:flex;gap:var(--space-sm);align-items:flex-end;}
+select{background:#111114;color:var(--text);border:1px solid #2b2b30;border-radius:6px;
+padding:6px 10px;font-size:14px;}
+textarea{flex:1;resize:none;background:#121214;border:1px solid #2b2b30;
+border-radius:var(--radius);padding:8px 10px;color:#d0d0d2;font-size:14px;
+min-height:40px;max-height:160px;overflow-y:auto;line-height:1.35;}
+button{background:var(--accent);border:none;border-radius:var(--radius);
+color:#fff;padding:10px 14px;cursor:pointer;font-size:14px;}
+.chat-status{font-size:12px;color:#888;text-align:right;border-top:1px solid var(--border);
+padding:4px 12px;}
+</style>
+</head>
+<body>
+<div class="chat-bar">
+  <div class="tabs" id="tabs">
+    <div class="tab active" draggable="true" data-session="s1">Session 1</div>
+    <div class="tab" draggable="true" data-session="s2">Session 2</div>
+  </div>
+
+  <div class="chat-messages" id="chatMessages">
+
+    <!-- 🔹 Boîte diff 1 -->
+    <div class="message ai"><div class="diff-box"><div class="diff-header"><div class="diff-header-left">message-manager.js</div><div class="diff-header-right"><span class="plus">+4</span><span class="minus">-4</span><span class="diff-icon">📋</span><span class="diff-icon">⋯</span></div></div><div class="diff-content"><pre class="diff"><del>- anthropic: 'anthropic-logo.svg',</del><ins>+ anthropic: 'anthropic-logo.png',</ins><del>- moonshot: 'moonshot-logo.svg',</del><ins>+ moonshot: 'moonshot-logo.png',</ins></pre></div></div></div>
+
+    <!-- 🔹 Boîte diff 2 -->
+    <div class="message ai"><div class="diff-box"><div class="diff-header"><div class="diff-header-left">conversation.css</div><div class="diff-header-right"><span class="plus">+6</span><span class="minus">0</span><span class="diff-icon">📋</span><span class="diff-icon">⋯</span></div></div><div class="diff-content"><pre class="diff"><ins>+ .provider-logo-fallback {</ins><ins>+   display: flex;</ins><ins>+   align-items: center;</ins><ins>+   justify-content: center;</ins><ins>+   color: var(--text-secondary);</ins><ins>+ }</ins></pre></div></div></div>
+
+    <!-- 🔹 Boîte Auto-Ran -->
+    <div class="message ai"><div class="command-block"><div class="command-header" onclick="toggleCommand(this)"><span>Auto-Ran command: <strong>cd</strong>, <strong>npx</strong></span><span class="command-toggle collapsed">⌄</span></div><div class="command-body partial">$ <span class="cmd">cd /Users/moi/Nextcloud/10.Scripts/07.ai-developer-analytics-next-gen && npx</span> \
+--yes vsce package -o ai-developer-analytics-0.3.1-fixed-logos-margins.vsix
+
+> <span class="cmd">npm run compile</span>
+
+> ai-developer-analytics@0.3.1 compile
+> tsc -p ./ && npm run build:mcp && npm run build:frontend
+
+CLI Using tsup v8.5.0
+✅ Build success (media/main.bundle.js 70.8 KB)
+📦 Packaged 1891 files (11.11 MB)</div></div></div>
+
+    <!-- 🔹 Interaction utilisateur -->
+    <div class="message user">Qu'y a-t-il dans ce fichier et que pourrait-on améliorer ?</div>
+    <div class="message ai"><strong>Améliorations concrètes</strong><br><br>
+• <b>Normaliser la portée</b> : préciser si ces règles s’appliquent au webview VS Code, au panneau latéral, ou aux deux.<br>
+• <b>Design tokens/variables</b> : extraire couleurs, rayons, ombres, espacements pour cohérence et theming.<br>
+• <b>États détaillés</b> : ajouter états “disabled”, “warning”, “info”, etc.<br>
+• <b>Accessibilité</b> : contraste, focus, clavier, ARIA.<br>
+• <b>Système de composants</b> : définir les composants cibles (Card, Badge, Accordion…).<br>
+• <b>Grille responsive</b> : gérer double colonne &lt;1024px.<br>
+• <b>Micro-interactions</b> : limiter durées (ex: 120–180ms).<br>
+• <b>Exemples narratifs</b> : scénarios complets (succès, échec, limite).<br>
+• <b>Erreurs & recovery</b> : actions correctives et edge cases.<br>
+• <b>Performance</b> : lazy render, debounce, pagination.<br>
+• <b>Internationalisation</b> : prévoir i18n et placeholders.<br>
+• <b>Cohérence typographique</b> : définir échelle (12/14/16/18).<br>
+• <b>Icônes</b> : Lucide/Heroicons (16px, stroke 1.5).<br>
+• <b>Extrait CSS étendu</b> : ajouter focus/hover, tokens de thème.<br>
+• <b>Mesure</b> : critères de succès (temps, taux d’erreur, CLS).</div>
+
+    <!-- 💬 Contenu Session 2 -->
+    <div class="message user session2" style="display:none;">Peux-tu m’expliquer le fonctionnement du cache API ?</div>
+    <div class="message ai session2" style="display:none;"><strong>Bien sûr 👇</strong><br><br>
+Lorsqu’une requête est envoyée à une IA, elle passe par un cache pour vérifier si une réponse identique existe déjà.<br>
+Cela permet de réduire le coût et d’accélérer la réponse.<br><br>
+• <b>Cache hit</b> → la réponse est trouvée, pas de nouvel appel API.<br>
+• <b>Cache miss</b> → la requête est nouvelle, on la stocke ensuite.<br><br>
+Il est possible d’ajuster la durée de rétention selon le type de contenu :<br>
+– quelques secondes pour les requêtes dynamiques,<br>
+– plusieurs jours pour les analyses de code répétées.</div>
+
+  </div>
+
+  <div class="chat-input">
+    <div class="chat-config">
+      <label>Agent</label>
+      <select id="provider">
+        <option>OpenAI</option>
+        <option>Anthropic</option>
+        <option>DeepSeek</option>
+        <option>Moonshot</option>
+        <option>Ollama</option>
+      </select>
+      <select id="model"></select>
+    </div>
+    <div class="chat-entry">
+      <textarea placeholder="Pose ta question…"></textarea>
+      <button>⏎</button>
+    </div>
+  </div>
+  <div class="chat-status">96 % du quota utilisé</div>
+</div>
+
+<script>
+function toggleCommand(header){
+ const body=header.nextElementSibling;
+ const arrow=header.querySelector(".command-toggle");
+ const isPartial=body.classList.contains("partial");
+ if(isPartial){
+   body.classList.remove("partial");
+   body.classList.add("collapsed");
+   arrow.classList.remove("collapsed");
+ } else {
+   body.classList.add("partial");
+   body.classList.remove("collapsed");
+   arrow.classList.add("collapsed");
+ }
+}
+
+/* ✅ Ajout minimal : mise à jour des modèles selon le provider + bascule onglets */
+document.addEventListener("DOMContentLoaded",()=>{
+  const modelsByProvider={
+    OpenAI:["gpt-4o","gpt-4o-mini"],
+    Anthropic:["claude-3.5","claude-3-opus"],
+    DeepSeek:["coder","reasoner"],
+    Moonshot:["m1","m1-mini"],
+    Ollama:["llama3","mistral","phi3"]
+  };
+  const providerSelect=document.getElementById("provider");
+  const modelSelect=document.getElementById("model");
+  function updateModels(){
+    const p=providerSelect.value;
+    modelSelect.innerHTML=modelsByProvider[p].map(m=>`<option>${m}</option>`).join("");
+  }
+  providerSelect.addEventListener("change",updateModels);
+  updateModels(); // initialisation
+
+  /* ✅ Bascule entre les deux sessions */
+  const tabs=document.querySelectorAll(".tab");
+  const session1=document.querySelectorAll(".message:not(.session2)");
+  const session2=document.querySelectorAll(".message.session2");
+  tabs.forEach(tab=>{
+    tab.addEventListener("click",()=>{
+      tabs.forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      if(tab.dataset.session==="s1"){
+        session1.forEach(el=>el.style.display="");
+        session2.forEach(el=>el.style.display="none");
+      }else{
+        session1.forEach(el=>el.style.display="none");
+        session2.forEach(el=>el.style.display="");
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

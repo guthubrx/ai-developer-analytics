@@ -1,6 +1,6 @@
 /**
- * AI Command Bar WebView Provider
- * Fournisseur WebView de la barre de commande IA
+ * AI Command Bar WebView Provider - Mockup Version
+ * Fournisseur WebView de la barre de commande IA - Version Mockup
  *
  * @license AGPL-3.0-only
  */
@@ -11,10 +11,11 @@ import { AnalyticsManager } from '../../analytics/manager';
 import { AICoach } from '../../coaching/coach';
 import { SessionManager } from '../../sessions/manager';
 import { AIRoutingMode, AIProvider, StreamingCallback } from '../../ai/types';
+import { ModelChecker } from '../../ai/model-checker';
 
 /**
- * AI Command Bar WebView Provider
- * Fournisseur WebView de la barre de commande IA
+ * AI Command Bar WebView Provider - Mockup
+ * Fournisseur WebView de la barre de commande IA - Mockup
  */
 export class AICommandBarProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'ai-command-bar';
@@ -25,6 +26,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private readonly aiCoach: AICoach;
     private readonly sessionManager: SessionManager;
     private readonly context: vscode.ExtensionContext;
+    private readonly modelChecker: ModelChecker;
 
     constructor(
         extensionUri: vscode.Uri,
@@ -39,6 +41,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         this.aiCoach = aiCoach;
         this.sessionManager = sessionManager;
         this.context = context;
+        this.modelChecker = new ModelChecker();
 
         // Temporary usage to avoid TypeScript error
         console.log('Session Manager initialized:', this.sessionManager.constructor.name);
@@ -77,8 +80,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         console.log('WebView HTML loaded, checking for file-autocomplete...');
         console.log('HTML contains file-autocomplete:', html.includes('file-autocomplete'));
 
-        // Send initial settings when webview is loaded
-        this.handleGetSettings();
+        // Reset any stuck loading states
+        this._view.webview.postMessage({
+            type: 'resetLoadingState'
+        });
 
         webviewView.webview.onDidReceiveMessage(
             async data => {
@@ -119,6 +124,14 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     case 'openSettings':
                         await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:user.ai-developer-analytics');
                         break;
+                    case 'checkProviderModels':
+                        await this.handleCheckProviderModels(data.provider, data.messageId);
+                        break;
+                    case 'webviewReady':
+                        console.log('WebView is ready and loaded');
+                        // Send initial settings when webview is ready
+                        await this.handleGetSettings();
+                        break;
                 }
             }
         );
@@ -149,6 +162,14 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 type: 'streamingStarted'
             });
 
+            // Set up timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+                this._view?.webview.postMessage({
+                    type: 'executionError',
+                    error: 'Request timeout - AI service did not respond'
+                });
+            }, 30000); // 30 second timeout
+
             // Define streaming callbacks
             const streamingCallback: StreamingCallback = {
                 onChunk: (chunk: string) => {
@@ -159,6 +180,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     });
                 },
                 onComplete: async (response: any) => {
+                    clearTimeout(timeoutId); // Clear timeout on completion
+                    
                     // Send final metrics
                     this._view?.webview.postMessage({
                         type: 'executionCompleted',
@@ -181,6 +204,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     }
                 },
                 onError: (error: any) => {
+                    clearTimeout(timeoutId); // Clear timeout on error
+                    
                     this._view?.webview.postMessage({
                         type: 'executionError',
                         error: error.message
@@ -367,8 +392,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     }
 
     /**
-     * Get HTML for webview
-     * Obtenir le HTML pour la webview
+     * Get HTML for webview - Mockup version
+     * Obtenir le HTML pour la webview - Version Mockup
      */
     private _getHtmlForWebview(webview: vscode.Webview): string {
         // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
@@ -390,205 +415,148 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         const nonce = getNonce();
 
         return `<!DOCTYPE html>
-            <html lang="en">
+            <html lang="fr">
             <head>
                 <meta charset="UTF-8">
-
-                <!--
-                    Use a content security policy to only allow loading images from https or from our extension directory,
-                    and only allow scripts that have a specific nonce.
-                -->
-                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource}; script-src 'nonce-${nonce}'; img-src ${webview.cspSource} https: data:">
-
+                <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; img-src ${webview.cspSource} https: data:;">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
                 <link href="${styleMainUri}" rel="stylesheet">
-
                 <title>AI Command Bar</title>
             </head>
             <body>
-                <div class="ai-command-bar">
-                    <div class="header-section">
-                        <div class="super-title">CURSOR DEVELOPER ANALYTICS</div>
-                        <button id="settings-btn" class="action-btn" title="Open Settings">
-                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M8 10a2 2 0 100-4 2 2 0 000 4z"/>
-                                <path d="M14 8c0-.4-.1-.8-.2-1.2l1.8-1.2-1-1.7-2 .3c-.5-.4-1-.7-1.6-.9L10 1H6l-.4 2.1c-.6.2-1.1.5-1.6.9l-2-.3-1 1.7 1.8 1.2c-.1.4-.2.8-.2 1.2s.1.8.2 1.2L1.4 11.3l1 1.7 2-.3c.5.4 1 .7 1.6.9L6 15h4l.4-2.1c.6-.2 1.1-.5 1.6-.9l2 .3 1-1.7-1.8-1.2c.1-.4.2-.8.2-1.2z"/>
-                            </svg>
-                        </button>
+                <div class="chat-bar">
+                    <!-- Loading indicator -->
+                    <div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
+                        <div style="color: #007acc; font-size: 14px;">Chargement de l'interface...</div>
                     </div>
 
-                    <!-- Les dropdowns ont été déplacées vers la zone de commande -->
-
-                    <!-- Conteneur de contenu principal -->
-                    <div class="main-content">
-                        <!-- Barre d'onglets des sessions -->
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M2 3h12c.6 0 1 .4 1 1v8c0 .6-.4 1-1 1H2c-.6 0-1-.4-1-1V4c0-.6.4-1 1-1z"/>
-                                        <path d="M4 6h8M4 8h6M4 10h4"/>
-                                    </svg>
-                                    Sessions
-                                </div>
-                            </div>
-                            <div class="session-tabs-container">
-                                <div class="session-tabs" id="session-tabs">
-                                    <!-- Les onglets seront générés dynamiquement -->
-                                </div>
-                                <button class="action-btn" id="new-session-btn" title="New Session">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    </svg>
-                                </button>
-                            </div>
+                    <!-- Main content -->
+                    <div id="main-content" style="display: none;">
+                        <!-- Onglets de sessions -->
+                        <div class="tabs" id="tabs">
+                            <div class="tab active" draggable="true" data-session="s1">Session 1</div>
+                            <div class="tab" draggable="true" data-session="s2">Session 2</div>
+                            <button class="new-session-btn" id="new-session-btn" title="Nouvelle session">+</button>
                         </div>
 
-                        <!-- Zone de conversation moderne -->
-                        <div class="card">
-                            <div class="card-header">
-                                <div class="card-title">
-                                    <svg class="card-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                        <path d="M8 12c2.2 0 4-1.8 4-4s-1.8-4-4-4-4 1.8-4 4 1.8 4 4 4z"/>
-                                        <path d="M8 12c0 2.2-1.8 4-4 4s-4-1.8-4-4 1.8-4 4-4 4 1.8 4 4z"/>
-                                        <path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4-1.8 4-4 4-4-1.8-4-4z"/>
-                                    </svg>
-                                    Conversation
+                        <!-- Zone de messages qui prend l'espace restant -->
+                        <div class="conversation-container" id="conversation-container">
+                            <div class="chat-messages" id="chatMessages">
+                                <div id="conversation-content" class="conversation-content">
+                                    <!-- Messages will be dynamically added here -->
                                 </div>
-                            </div>
-                            <div class="conversation-container" id="conversation-container">
-                                <div id="conversation-content" class="conversation-content"></div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Zone fixe en bas : Coach + Zone de saisie -->
+                    <!-- Zone de saisie fixée en bas -->
                     <div class="fixed-bottom-container">
-                        <!-- Coach Advice avec collapse -->
-                        <div class="coaching-section collapsed" id="coaching-section">
-                            <div class="coaching-header">
-                                <span>AI Coach Advice</span>
-                                <button id="coach-collapse-btn" class="collapse-btn">
-                                    <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                                        <path d="M1 4L6 9L11 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                    </svg>
-                                </button>
-                            </div>
-                            <div id="coaching-content" class="coaching-content"></div>
-                        </div>
-
-                        <!-- Context Size Info Bar -->
-                        <div class="context-info-bar" id="context-info-bar">
-                            <span class="context-label">Context Size:</span>
-                            <span id="context-tokens" class="context-value">0 tokens</span>
-                        </div>
-
-                        <!-- Barre de commande compacte -->
-                        <div class="card command-input-container">
-                            <div class="command-input-wrapper">
-                                <!-- Conteneur pour toutes les dropdowns côte à côte -->
-                                <div class="controls-row">
-                                    <div class="control-group">
-                                        <!-- Bouton @ pour les fichiers -->
-                                        <button id="file-attach-btn" class="action-btn" title="Attach file">
-                                            @
-                                        </button>
-
-                                        <!-- Dropdown Task (Code/Doc/Debug) -->
-                                        <select id="task-select" class="compact-select" title="Task Type">
-                                            <option value="general">General</option>
-                                            <option value="code">Code</option>
-                                            <option value="documentation">Documentation</option>
-                                            <option value="debug">Debug</option>
+                        <div class="chat-input">
+                            <div class="chat-config">
+                                <!-- Tous les dropdowns dans le même container -->
+                                <div class="all-dropdowns-container">
+                                    <div class="dropdown-wrapper mode-dropdown">
+                                        <span class="dropdown-icon-left">⚙</span>
+                                        <select id="mode-select">
+                                            <option value="manual">Manual Mode</option>
+                                            <option value="auto">Auto Mode</option>
                                         </select>
+                                        <span class="dropdown-icon-right">▼</span>
+                                    </div>
 
-                                        <!-- Dropdown Mode (Eco/Quality) -->
-                                        <select id="mode-select" class="compact-select" title="Mode">
-                                            <option value="auto" selected>Auto</option>
-                                            <option value="eco">Eco</option>
-                                            <option value="normal">Normal</option>
-                                            <option value="quality">Quality</option>
-                                            <option value="strict-json">Strict JSON</option>
-                                            <option value="creative">Creative</option>
-                                        </select>
+                                    <!-- Dropdowns pour Manual Mode -->
+                                    <div class="manual-mode-dropdowns" id="manual-mode-dropdowns" style="display: none;">
+                                        <div class="dropdown-wrapper">
+                                            <span class="dropdown-icon-left">◉</span>
+                                            <select id="provider">
+                                                <option>OpenAI</option>
+                                                <option>Anthropic</option>
+                                                <option>DeepSeek</option>
+                                                <option>Moonshot</option>
+                                                <option>Ollama</option>
+                                            </select>
+                                            <span class="dropdown-icon-right">▼</span>
+                                        </div>
+                                        <div class="dropdown-wrapper">
+                                            <span class="dropdown-icon-left">🤖</span>
+                                            <select id="model"></select>
+                                            <span class="dropdown-icon-right">▼</span>
+                                        </div>
+                                    </div>
 
-                                        <!-- Dropdown pour sélectionner le moteur AI -->
-                                        <select id="engine-select" class="compact-select" title="AI Engine">
-                                            <option value="auto">Auto</option>
-                                            <option value="openai">OpenAI</option>
-                                            <option value="anthropic">Anthropic</option>
-                                            <option value="deepseek" selected>DeepSeek</option>
-                                            <option value="moonshot">Moonshot</option>
-                                            <option value="ollama">Ollama</option>
-                                        </select>
+                                    <!-- Dropdowns pour Auto Mode -->
+                                    <div class="auto-mode-dropdowns" id="auto-mode-dropdowns">
+                                        <div class="dropdown-wrapper">
+                                            <span class="dropdown-icon-left">◯</span>
+                                            <select id="task-select">
+                                                <option value="general">General</option>
+                                                <option value="code">Code</option>
+                                                <option value="documentation">Documentation</option>
+                                                <option value="debug">Debug</option>
+                                            </select>
+                                            <span class="dropdown-icon-right">▼</span>
+                                        </div>
+                                        <div class="dropdown-wrapper">
+                                            <span class="dropdown-icon-left">◐</span>
+                                            <select id="routing-mode">
+                                                <option value="eco">Eco</option>
+                                                <option value="normal">Normal</option>
+                                                <option value="quality">Quality</option>
+                                                <option value="strict-json">Strict JSON</option>
+                                                <option value="creative">Creative</option>
+                                            </select>
+                                            <span class="dropdown-icon-right">▼</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <!-- Zone de texte auto-expansive -->
-                                <div class="text-input-wrapper">
-                                    <!-- Model selection -->
-                                    <div id="model-selection-row" style="margin-bottom:6px; gap:6px; align-items:center;">
-                                        <label style="font-size:11px; color: var(--vscode-descriptionForeground);">Modèles</label>
-                                        <select id="model-suggestions" class="compact-select" title="Modèles">
-                                            <option value="">Sélectionner un modèle</option>
-                                        </select>
-                                        <!-- Bouton pour ouvrir le sélecteur de modèles -->
-                                        <button id="select-model-btn" class="action-btn" title="Sélectionner un modèle d\'IA" style="margin-left:4px;">
-                                            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                                <path d="M8 1v14M1 8h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <textarea id="prompt-input" placeholder="Ask anything..." rows="2"></textarea>
-                                </div>
-
-                                <!-- Actions en bas -->
-                                <div class="input-actions">
-                                    <button id="image-attach-btn" class="action-btn" title="Attach image">
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                            <path d="M14.5 3h-13C.7 3 0 3.7 0 4.5v7c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5v-7c0-.8-.7-1.5-1.5-1.5zM1.5 4h13c.3 0 .5.2.5.5v4.8l-2.3-2.3c-.2-.2-.5-.2-.7 0L9 9.3 6.5 6.8c-.2-.2-.5-.2-.7 0L2 10.6V4.5c0-.3.2-.5.5-.5z"/>
-                                        </svg>
-                                    </button>
-                                    <button id="send-btn" class="send-btn" title="Send message">
-                                        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                                            <path d="M15.7 7.3l-7-7c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4L7.6 7H1c-.6 0-1 .4-1 1s.4 1 1 1h6.6L7.3 14.3c-.4.4-.4 1 0 1.4.2.2.5.3.7.3s.5-.1.7-.3l7-7c.4-.4.4-1 0-1.4z"/>
-                                        </svg>
+                                <!-- Bouton de sauvegarde à droite -->
+                                <div class="save-config-container">
+                                    <button class="save-config-btn" id="save-config-btn" title="Sauvegarder la configuration">
                                     </button>
                                 </div>
                             </div>
-
-                            <!-- Métriques compactes -->
-                            <div class="metrics-section">
-                                <div class="metric-item">
-                                    <span class="metric-label">Cost</span>
-                                    <span id="cost-info" class="metric-value">$0.00</span>
-                                </div>
-                                <div class="metric-item">
-                                    <span class="metric-label">Tokens</span>
-                                    <span id="tokens-info" class="metric-value">0</span>
-                                </div>
-                                <div class="metric-item">
-                                    <span id="latency-info" class="metric-value">0s</span>
-                                </div>
-                                <div class="metric-item">
-                                    <span class="metric-label">Cache</span>
-                                    <span id="cache-info" class="metric-value">0%</span>
-                                </div>
+                            <div class="chat-entry">
+                                <textarea id="prompt-input" placeholder="Pose ta question…"></textarea>
+                                <button id="send-btn">⏎</button>
                             </div>
                         </div>
-
-                        <!-- File autocomplete -->
-                        <div id="file-autocomplete" class="file-autocomplete" style="display: none;">
-                            <input type="text" id="file-search" placeholder="Search files..." />
-                            <div id="file-results" class="file-results"></div>
+                        <div class="chat-status">
+                            <span id="context-tokens">0 tokens</span> •
+                            <span id="cost-info">$0.00</span> •
+                            <span id="tokens-info">0</span> •
+                            <span id="latency-info">0s</span>
                         </div>
                     </div>
+                    
+                    <!-- Notification toast -->
+                    <div class="notification-toast" id="notification-toast">
+                        <span class="notification-message" id="notification-message"></span>
+                        </div>
                     </div>
                 </div>
 
                 <script nonce="${nonce}">
-                    // Pass logo URIs to JavaScript modules
+                    // Show loading indicator initially
+                    document.getElementById('loading-indicator').style.display = 'block';
+
+                    // Wait for DOM to be ready
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Hide loading indicator and show main content
+                        setTimeout(() => {
+                            document.getElementById('loading-indicator').style.display = 'none';
+                            document.getElementById('main-content').style.display = 'block';
+
+                            // Notify extension that webview is ready
+                            if (window.acquireVsCodeApi) {
+                                const vscode = acquireVsCodeApi();
+                                vscode.postMessage({
+                                    type: 'webviewReady'
+                                });
+                            }
+                        }, 100);
+                    });
+
                     window.logoUris = ${JSON.stringify(logoUris)};
                 </script>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
@@ -719,6 +687,36 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         }
 
         await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(result.join('\n')));
+    }
+
+    /**
+     * Handle provider models checking
+     * Gérer la vérification des modèles du fournisseur
+     */
+    private async handleCheckProviderModels(provider: string, messageId: string) {
+        try {
+            const models = await this.modelChecker.checkProviderModels(provider);
+            
+            if (this._view) {
+                this._view.webview.postMessage({
+                    type: 'apiModelsResponse',
+                    messageId: messageId,
+                    success: true,
+                    models: models
+                });
+            }
+        } catch (error) {
+            console.error(`Error checking models for ${provider}:`, error);
+            
+            if (this._view) {
+                this._view.webview.postMessage({
+                    type: 'apiModelsResponse',
+                    messageId: messageId,
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
+            }
+        }
     }
 }
 

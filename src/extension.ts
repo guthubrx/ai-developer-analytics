@@ -27,61 +27,102 @@ import { AIModelManager } from './ai/model-manager';
 let mcpManager: MCPManager | null = null;
 
 export async function activate(context: vscode.ExtensionContext) {
-    console.log('AI Developer Analytics extension is now active!');
+    console.log('✅ [ACTIVATION] AI Developer Analytics extension is now active!');
 
-    // Initialize core managers
-    // Initialiser les gestionnaires principaux
-    const analyticsManager = new AnalyticsManager(context);
-    const aiClientManager = new AIClientManager(context);
-    const aiRouter = new AIRouter(aiClientManager, analyticsManager);
-    const aiCoach = new AICoach(analyticsManager, aiRouter);
-    const hotReloadManager = new HotReloadManager(context);
-    mcpManager = new MCPManager(context);
-    const sessionManager = new SessionManager(context);
-    const aiModelManager = new AIModelManager(context);
+    try {
+        // Initialize core managers
+        // Initialiser les gestionnaires principaux
+        console.log('📦 [ACTIVATION] Creating managers...');
+        
+        const analyticsManager = new AnalyticsManager(context);
+        console.log('✓ AnalyticsManager created');
+        
+        const aiClientManager = new AIClientManager(context);
+        console.log('✓ AIClientManager created');
+        
+        // Initialize AI clients asynchronously but don't block activation
+        aiClientManager.initialize().catch(error => {
+            console.error('❌ Failed to initialize AI clients:', error);
+        });
+        
+        const aiRouter = new AIRouter(aiClientManager, analyticsManager);
+        console.log('✓ AIRouter created');
+        
+        const aiCoach = new AICoach(analyticsManager, aiRouter);
+        console.log('✓ AICoach created');
+        
+        const hotReloadManager = new HotReloadManager(context);
+        console.log('✓ HotReloadManager created');
+        
+        mcpManager = new MCPManager(context);
+        console.log('✓ MCPManager created');
+        
+        const sessionManager = new SessionManager(context);
+        console.log('✓ SessionManager created');
+        
+        const aiModelManager = new AIModelManager(context);
+        console.log('✓ AIModelManager created');
 
-    // Register webview providers
-    // Enregistrer les fournisseurs de webview
-    const commandBarProvider = new AICommandBarProvider(
-        context.extensionUri,
-        aiRouter,
-        analyticsManager,
-        aiCoach,
-        sessionManager,
-        context
-    );
+        // Register webview providers
+        // Enregistrer les fournisseurs de webview
+        console.log('🎨 [ACTIVATION] Creating webview providers...');
+        
+        const commandBarProvider = new AICommandBarProvider(
+            context.extensionUri,
+            aiRouter,
+            analyticsManager,
+            aiCoach,
+            sessionManager,
+            context
+        );
+        console.log('✓ CommandBarProvider created');
 
-    const dashboardProvider = new AIDashboardProvider(
-        context.extensionUri,
-        analyticsManager,
-        aiCoach
-    );
+        const dashboardProvider = new AIDashboardProvider(
+            context.extensionUri,
+            analyticsManager,
+            aiCoach
+        );
+        console.log('✓ DashboardProvider created');
 
-    const coachProvider = new AICoachProvider(
-        context.extensionUri,
-        aiCoach
-    );
+        const coachProvider = new AICoachProvider(
+            context.extensionUri,
+            aiCoach
+        );
+        console.log('✓ CoachProvider created');
 
-    // Register views
-    // Enregistrer les vues
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(
-            'ai-command-bar',
-            commandBarProvider
-        ),
-        vscode.window.registerWebviewViewProvider(
-            'ai-dashboard',
-            dashboardProvider
-        ),
-        vscode.window.registerWebviewViewProvider(
-            'ai-coach',
-            coachProvider
-        )
-    );
+        // Register views
+        // Enregistrer les vues
+        console.log('📝 [ACTIVATION] Registering webview providers...');
+        
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(
+                'ai-command-bar',
+                commandBarProvider
+            )
+        );
+        console.log('✓ ai-command-bar registered');
+        
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(
+                'ai-dashboard',
+                dashboardProvider
+            )
+        );
+        console.log('✓ ai-dashboard registered');
+        
+        context.subscriptions.push(
+            vscode.window.registerWebviewViewProvider(
+                'ai-coach',
+                coachProvider
+            )
+        );
+        console.log('✓ ai-coach registered');
 
-    // Register commands
-    // Enregistrer les commandes
-    context.subscriptions.push(
+        // Register commands
+        // Enregistrer les commandes
+        console.log('⚙️  [ACTIVATION] Registering commands...');
+        
+        context.subscriptions.push(
         vscode.commands.registerCommand('ai-analytics.openCommandBar', () => {
             vscode.commands.executeCommand('ai-command-bar.focus');
         }),
@@ -148,24 +189,53 @@ export async function activate(context: vscode.ExtensionContext) {
                 commandBarProvider.updateSelectedModel(selectedModel);
             }
         })
-    );
+        );
+        console.log('✓ All commands registered');
 
-    // Register test commands (development only)
-    // Enregistrer les commandes de test (développement uniquement)
-    registerDeepSeekTestCommand(context);
+        // Register test commands (development only)
+        // Enregistrer les commandes de test (développement uniquement)
+        console.log('🧪 [ACTIVATION] Registering test commands...');
+        registerDeepSeekTestCommand(context);
+        console.log('✓ Test commands registered');
 
-    // Initialize hot reload if enabled
-    // Initialiser le hot reload si activé
-    const config = vscode.workspace.getConfiguration('aiAnalytics');
-    if (config.get('hotReloadEnabled')) {
-        await hotReloadManager.initialize();
+        // Initialize hot reload if enabled
+        // Initialiser le hot reload si activé
+        console.log('🔄 [ACTIVATION] Checking hot reload...');
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+        if (config.get('hotReloadEnabled')) {
+            try {
+                await Promise.race([
+                    hotReloadManager.initialize(),
+                    new Promise((_, reject) => setTimeout(() => reject(new Error('Hot reload timeout')), 5000))
+                ]);
+                console.log('✓ Hot reload initialized');
+            } catch (error) {
+                console.error('❌ Failed to initialize hot reload:', error);
+            }
+        } else {
+            console.log('⊘ Hot reload disabled');
+        }
+
+        // Start analytics collection
+        // Démarrer la collecte d'analyses
+        console.log('📊 [ACTIVATION] Initializing analytics...');
+        try {
+            await Promise.race([
+                analyticsManager.initialize(),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Analytics init timeout')), 5000))
+            ]);
+            console.log('✓ Analytics initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize analytics:', error);
+            // Continue without analytics if initialization fails
+        }
+
+        console.log('✅ [ACTIVATION] AI Developer Analytics extension initialized successfully!');
+    } catch (error) {
+        console.error('❌ [ACTIVATION] Critical error during activation:', error);
+        vscode.window.showErrorMessage(`Failed to activate AI Developer Analytics: ${error instanceof Error ? error.message : error}`);
+        throw error;
     }
-
-    // Start analytics collection
-    // Démarrer la collecte d'analyses
-    await analyticsManager.initialize();
-
-    console.log('AI Developer Analytics extension initialized successfully');
 }
 
 /**

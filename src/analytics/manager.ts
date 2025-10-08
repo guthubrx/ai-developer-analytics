@@ -1,58 +1,70 @@
 /**
- * Analytics Manager with SQLite storage
- * Gestionnaire d'analyses avec stockage SQLite
+ * Analytics Manager with JSON storage
+ * Gestionnaire d'analyses avec stockage JSON
  *
  * @license AGPL-3.0-only
  */
 
 import * as vscode from 'vscode';
-import initSqlJs, { Database } from 'sql.js';
-import * as CryptoJS from 'crypto-js';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { AnalyticsRequest } from '../ai/types';
+
+interface AnalyticsData {
+    requests: Array<{
+        prompt_hash: string;
+        response_hash: string;
+        provider: string;
+        routing_mode: string;
+        latency: number;
+        tokens: number;
+        cost: number;
+        success: number;
+        cache_hit: number;
+        error?: string;
+        timestamp: number;
+    }>;
+}
 
 /**
  * Analytics manager for tracking AI usage
  * Gestionnaire d'analyses pour suivre l'utilisation de l'IA
  */
 export class AnalyticsManager {
-    private db: Database | null = null;
-    private readonly dbPath: string;
+    private dataPath: string;
+    private data: AnalyticsData = { requests: [] };
 
     constructor(context: vscode.ExtensionContext) {
-        this.dbPath = context.globalStorageUri.fsPath + '/analytics.db';
+        this.dataPath = context.globalStorageUri.fsPath + '/analytics.json';
     }
 
     /**
-     * Initialize analytics database
-     * Initialiser la base de données d'analyses
+     * Initialize analytics data
+     * Initialiser les données d'analyses
      */
     async initialize(): Promise<void> {
         try {
-            // Initialize SQL.js
-            // Initialiser SQL.js
-            const SQL = await initSqlJs();
-
             // Ensure storage directory exists
             // S'assurer que le répertoire de stockage existe
-            const fs = require('fs');
-            const path = require('path');
-            const dir = path.dirname(this.dbPath);
+            const dir = path.dirname(this.dataPath);
             if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir, { recursive: true });
             }
 
-            // Try to load existing database or create new one
-            // Essayer de charger la base existante ou en créer une nouvelle
-            let dbData: Uint8Array | null = null;
-            if (fs.existsSync(this.dbPath)) {
-                dbData = new Uint8Array(fs.readFileSync(this.dbPath));
+            // Try to load existing data or create new
+            // Essayer de charger les données existantes ou en créer de nouvelles
+            if (fs.existsSync(this.dataPath)) {
+                const fileData = fs.readFileSync(this.dataPath, 'utf8');
+                this.data = JSON.parse(fileData);
+            } else {
+                this.data = { requests: [] };
+                await this.saveData();
             }
-
-            this.db = new SQL.Database(dbData || undefined);
-
-            await this.createTables();
         } catch (error) {
-            throw new Error(`Failed to initialize database: ${error}`);
+            console.error(`Failed to initialize analytics: ${error}`);
+            // Don't throw - allow extension to continue even if analytics fails
+            this.data = { requests: [] };
         }
     }
 
@@ -61,33 +73,32 @@ export class AnalyticsManager {
      * Enregistrer une requête IA dans les analyses
      */
     async recordRequest(request: AnalyticsRequest): Promise<void> {
-        if (!this.db) {
-            throw new Error('Analytics database not initialized');
-        }
-
         try {
             const timestamp = request.timestamp || Date.now();
             const promptHash = this.hashSensitiveData(request.prompt);
             const responseHash = this.hashSensitiveData(request.response);
 
-            this.db.run(`
-                INSERT INTO ai_requests (
-                    prompt_hash, response_hash, provider, routing_mode,
-                    latency, tokens, cost, success, cache_hit, error, timestamp
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-                promptHash,
-                responseHash,
-                request.provider,
-                request.routingMode,
-                request.latency,
-                request.tokens,
-                request.cost,
-                request.success ? 1 : 0,
-                request.cacheHit ? 1 : 0,
-                request.error || null,
+            this.data.requests.push({
+                prompt_hash: promptHash,
+                response_hash: responseHash,
+                provider: request.provider,
+                routing_mode: request.routingMode,
+                latency: request.latency,
+                tokens: request.tokens,
+                cost: request.cost,
+                success: request.success ? 1 : 0,
+                cache_hit: request.cacheHit ? 1 : 0,
+                error: request.error || undefined,
                 timestamp
-            ]);
+            });
+
+            // Keep only last 1000 requests to prevent file from growing too large
+            // Conserver seulement les 1000 dernières requêtes pour éviter que le fichier ne devienne trop volumineux
+            if (this.data.requests.length > 1000) {
+                this.data.requests = this.data.requests.slice(-1000);
+            }
+
+            await this.saveData();
         } catch (error) {
             throw new Error(`Failed to record request: ${error}`);
         }
@@ -107,77 +118,46 @@ export class AnalyticsManager {
         providerDistribution: Record<string, number>;
         routingModeDistribution: Record<string, number>;
     }> {
-        if (!this.db) {
-            throw new Error('Analytics database not initialized');
+        const requests = this.data.requests;
+        const totalRequests = requests.length;
+
+        if (totalRequests === 0) {
+            return {
+                totalRequests: 0,
+                totalCost: 0,
+                totalTokens: 0,
+                averageLatency: 0,
+                successRate: 0,
+                cacheHitRate: 0,
+                providerDistribution: {},
+                routingModeDistribution: {}
+            };
         }
 
-        const summary = {
-            totalRequests: 0,
-            totalCost: 0,
-            totalTokens: 0,
-            averageLatency: 0,
-            successRate: 0,
-            cacheHitRate: 0,
-            providerDistribution: {} as Record<string, number>,
-            routingModeDistribution: {} as Record<string, number>
+        const totalCost = requests.reduce((sum, req) => sum + req.cost, 0);
+        const totalTokens = requests.reduce((sum, req) => sum + req.tokens, 0);
+        const averageLatency = requests.reduce((sum, req) => sum + req.latency, 0) / totalRequests;
+        const successRate = requests.filter(req => req.success === 1).length / totalRequests;
+        const cacheHitRate = requests.filter(req => req.cache_hit === 1).length / totalRequests;
+
+        const providerDistribution: Record<string, number> = {};
+        const routingModeDistribution: Record<string, number> = {};
+
+        requests.forEach(req => {
+            providerDistribution[req.provider] = (providerDistribution[req.provider] || 0) + 1;
+            routingModeDistribution[req.routing_mode] = (routingModeDistribution[req.routing_mode] || 0) + 1;
+        });
+
+        return {
+            totalRequests,
+            totalCost,
+            totalTokens,
+            averageLatency,
+            successRate,
+            cacheHitRate,
+            providerDistribution,
+            routingModeDistribution
         };
-
-        try {
-            // Get basic statistics
-            // Obtenir les statistiques de base
-            const basicStats = this.db.exec(`
-                SELECT
-                    COUNT(*) as totalRequests,
-                    SUM(cost) as totalCost,
-                    SUM(tokens) as totalTokens,
-                    AVG(latency) as averageLatency,
-                    AVG(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successRate,
-                    AVG(CASE WHEN cache_hit = 1 THEN 1 ELSE 0 END) as cacheHitRate
-                FROM ai_requests
-            `);
-
-            if (basicStats.length > 0 && basicStats[0] && basicStats[0].values && basicStats[0].values.length > 0) {
-                const row = basicStats[0].values[0];
-                summary.totalRequests = row?.[0] as number || 0;
-                summary.totalCost = row?.[1] as number || 0;
-                summary.totalTokens = row?.[2] as number || 0;
-                summary.averageLatency = row?.[3] as number || 0;
-                summary.successRate = row?.[4] as number || 0;
-                summary.cacheHitRate = row?.[5] as number || 0;
-            }
-
-            // Get provider distribution
-            // Obtenir la distribution des fournisseurs
-            const providerStats = this.db.exec(`
-                SELECT provider, COUNT(*) as count
-                FROM ai_requests
-                GROUP BY provider
-            `);
-
-            if (providerStats.length > 0 && providerStats[0]?.values) {
-                providerStats[0].values.forEach((row: any[]) => {
-                    summary.providerDistribution[row[0] as string] = row[1] as number;
-                });
-            }
-
-            // Get routing mode distribution
-            // Obtenir la distribution des modes de routage
-            const routingStats = this.db.exec(`
-                SELECT routing_mode, COUNT(*) as count
-                FROM ai_requests
-                GROUP BY routing_mode
-            `);
-
-            if (routingStats.length > 0 && routingStats[0]?.values) {
-                routingStats[0].values.forEach((row: any[]) => {
-                    summary.routingModeDistribution[row[0] as string] = row[1] as number;
-                });
-            }
-        } catch (error) {
-            throw new Error(`Failed to get summary: ${error}`);
-        }
-
-        return summary;
     }
 
     /**
@@ -185,66 +165,33 @@ export class AnalyticsManager {
      * Effacer toutes les données d'analyses
      */
     async clearData(): Promise<void> {
-        if (!this.db) {
-            throw new Error('Analytics database not initialized');
-        }
-
         try {
-            this.db.run('DELETE FROM ai_requests');
+            this.data.requests = [];
+            await this.saveData();
         } catch (error) {
             throw new Error(`Failed to clear data: ${error}`);
         }
     }
 
     /**
-     * Close database connection
-     * Fermer la connexion à la base de données
+     * Close analytics manager
+     * Fermer le gestionnaire d'analyses
      */
     async close(): Promise<void> {
-        if (this.db) {
-            // Save database to file before closing
-            // Sauvegarder la base de données dans un fichier avant de fermer
-            const fs = require('fs');
-            const dbData = this.db.export();
-            fs.writeFileSync(this.dbPath, dbData);
-
-            this.db.close();
-            this.db = null;
-        }
+        // Nothing to close for JSON storage
+        // Rien à fermer pour le stockage JSON
     }
 
     /**
-     * Create database tables
-     * Créer les tables de la base de données
+     * Save data to file
+     * Sauvegarder les données dans un fichier
      */
-    private async createTables(): Promise<void> {
-        if (!this.db) {
-            throw new Error('Database not initialized');
-        }
-
+    private async saveData(): Promise<void> {
         try {
-            this.db.exec(`
-                CREATE TABLE IF NOT EXISTS ai_requests (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    prompt_hash TEXT NOT NULL,
-                    response_hash TEXT NOT NULL,
-                    provider TEXT NOT NULL,
-                    routing_mode TEXT NOT NULL,
-                    latency INTEGER NOT NULL,
-                    tokens INTEGER NOT NULL,
-                    cost REAL NOT NULL,
-                    success INTEGER NOT NULL,
-                    cache_hit INTEGER NOT NULL,
-                    error TEXT,
-                    timestamp INTEGER NOT NULL
-                );
-
-                CREATE INDEX IF NOT EXISTS idx_provider ON ai_requests(provider);
-                CREATE INDEX IF NOT EXISTS idx_routing_mode ON ai_requests(routing_mode);
-                CREATE INDEX IF NOT EXISTS idx_timestamp ON ai_requests(timestamp);
-            `);
+            fs.writeFileSync(this.dataPath, JSON.stringify(this.data, null, 2));
         } catch (error) {
-            throw new Error(`Failed to create tables: ${error}`);
+            console.error(`Failed to save analytics data: ${error}`);
+            // Don't throw - allow operation to continue
         }
     }
 
@@ -253,7 +200,6 @@ export class AnalyticsManager {
      * Hasher les données sensibles pour la confidentialité
      */
     private hashSensitiveData(data: string): string {
-        return CryptoJS.SHA256(data).toString();
+        return crypto.createHash('sha256').update(data).digest('hex');
     }
-
 }

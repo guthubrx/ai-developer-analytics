@@ -87,11 +87,19 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
-  position: sticky;
-  bottom: 0;
   background: var(--bg-primary);
   padding-bottom: var(--space-lg);
   z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Conversation container that takes remaining space */
+.conversation-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Context Info Bar */
@@ -125,19 +133,54 @@
   }
 }
 
-/* Small column adjustments */
-@media (max-width: 400px) {
+/* Extension sidebar responsive adjustments */
+@media (max-width: 600px) {
   .ai-command-bar {
     padding: var(--space-sm);
     gap: var(--space-sm);
   }
-
+  
   .card {
     padding: var(--space-md);
+    margin-bottom: var(--space-sm);
+  }
+  
+  .fixed-bottom-container {
+    padding-bottom: var(--space-sm);
+  }
+}
+
+/* Small column adjustments */
+@media (max-width: 400px) {
+  .ai-command-bar {
+    padding: var(--space-xs);
+    gap: var(--space-xs);
+  }
+
+  .card {
+    padding: var(--space-sm);
+    margin-bottom: var(--space-xs);
   }
 
   .fixed-bottom-container {
-    padding-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+  }
+}
+
+/* Very small extension width */
+@media (max-width: 300px) {
+  .ai-command-bar {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .card {
+    padding: var(--space-xs);
+    margin-bottom: 4px;
+  }
+
+  .fixed-bottom-container {
+    padding-bottom: var(--space-xs);
   }
 }
 

@@ -1,0 +1,169 @@
+/* Code Block Components for AI Developer Analytics */
+
+/* Code Block Container */
+.code-block {
+  margin: var(--space-sm) 0;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Code Header */
+.code-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px var(--space-md);
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-primary);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  height: 24px;
+}
+
+.code-language {
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+}
+
+/* Copy Code Button */
+.copy-code-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--space-xs);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.copy-code-btn:hover {
+  background: var(--bg-card);
+  opacity: 1;
+  color: var(--text-primary);
+}
+
+/* Code Content */
+.code-block pre {
+  margin: 0;
+  padding: var(--space-md);
+  overflow-x: auto;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  line-height: 1.4;
+  background: var(--bg-secondary);
+  color: var(--text-code);
+}
+
+.code-block code {
+  background: none;
+  padding: 0;
+  color: var(--text-code);
+  font-family: inherit;
+}
+
+/* Inline Code */
+.inline-code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-sm);
+  color: var(--text-code);
+  border: 1px solid var(--border-primary);
+}
+
+/* Code Actions */
+.code-actions {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-primary);
+}
+
+.code-action-btn {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: var(--font-size-xs);
+  padding: var(--space-xs) var(--space-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.code-action-btn:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+}
+
+.code-action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Code Block States */
+.code-block.copied .copy-code-btn {
+  color: var(--accent-success);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.code-block.error {
+  border-color: var(--accent-error);
+}
+
+.code-block.error .code-header {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--accent-error);
+}
+
+/* Diff Code Blocks */
+.code-block.diff pre {
+  font-family: var(--font-family-mono);
+}
+
+.code-block.diff .diff-added {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--accent-success);
+}
+
+.code-block.diff .diff-removed {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--accent-error);
+}
+
+.code-block.diff .diff-context {
+  color: var(--text-muted);
+}
+
+/* Code Block Responsive */
+@media (max-width: 768px) {
+  .code-block pre {
+    padding: var(--space-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .code-header {
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  .code-actions {
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .code-action-btn {
+    justify-content: center;
+  }
+}

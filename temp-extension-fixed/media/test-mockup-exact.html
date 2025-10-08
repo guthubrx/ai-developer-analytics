@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mockup Exact - AI Command Bar</title>
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-bar">
+        <!-- Onglets de sessions -->
+        <div class="tabs" id="tabs">
+            <div class="tab active" draggable="true" data-session="s1">Session 1</div>
+            <div class="tab" draggable="true" data-session="s2">Session 2</div>
+        </div>
+
+        <!-- Zone de messages -->
+        <div class="chat-messages" id="chatMessages">
+            <div id="conversation-content" class="conversation-content">
+                <!-- Messages de test -->
+            </div>
+        </div>
+
+        <!-- Zone de saisie -->
+        <div class="chat-input">
+            <div class="chat-config">
+                <label>Agent</label>
+                <select id="provider">
+                    <option>OpenAI</option>
+                    <option>Anthropic</option>
+                    <option>DeepSeek</option>
+                    <option>Moonshot</option>
+                    <option>Ollama</option>
+                </select>
+                <select id="model"></select>
+            </div>
+            <div class="chat-entry">
+                <textarea id="prompt-input" placeholder="Pose ta question…"></textarea>
+                <button id="send-btn">⏎</button>
+            </div>
+        </div>
+        <div class="chat-status">
+            <span id="context-tokens">0 tokens</span> • 
+            <span id="cost-info">$0.00</span> • 
+            <span id="tokens-info">0</span> • 
+            <span id="latency-info">0s</span>
+        </div>
+    </div>
+
+    <!-- Test Controls -->
+    <div style="position: fixed; top: 10px; right: 10px; background: #1a1a1d; padding: 10px; border-radius: 6px; border: 1px solid #2a2a2f;">
+        <h4 style="margin: 0 0 10px 0; color: #e8e8ea;">Test Controls</h4>
+        <button onclick="testUserMessage()" style="margin: 2px; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test User Message</button>
+        <button onclick="testAIResponse()" style="margin: 2px; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test AI Response</button>
+        <button onclick="testDiffBlock()" style="margin: 2px; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Diff Block</button>
+        <button onclick="testCommandBlock()" style="margin: 2px; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Command Block</button>
+        <button onclick="testStreaming()" style="margin: 2px; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Streaming</button>
+        <button onclick="clearChat()" style="margin: 2px; padding: 5px 10px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Clear Chat</button>
+    </div>
+
+    <script type="module">
+        import MockupMessageManager from './modules/mockup-message-manager.js';
+        import MockupEventsManagerExact from './modules/mockup-events-exact.js';
+        
+        // Make managers available globally for testing
+        window.MockupMessageManager = MockupMessageManager;
+        window.MockupEventsManagerExact = MockupEventsManagerExact;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing test interface...');
+            MockupEventsManagerExact.initialize();
+        });
+
+        // Test functions
+        window.testUserMessage = function() {
+            MockupMessageManager.addUserMessage('Test message from user!');
+        };
+
+        window.testAIResponse = function() {
+            MockupMessageManager.startAIResponse();
+            setTimeout(() => {
+                MockupMessageManager.addStreamingChunk('Voici une réponse de test avec du **contenu formaté** et des éléments inline.');
+                MockupMessageManager.completeAIResponse();
+            }, 500);
+        };
+
+        window.testDiffBlock = function() {
+            MockupMessageManager.addUserMessage('Peux-tu me montrer les changements dans ce fichier ?');
+            
+            setTimeout(() => {
+                MockupMessageManager.startAIResponse();
+                MockupMessageManager.addStreamingChunk('Voici les modifications apportées :\n\n```diff\n- console.log(\'old code\');\n+ console.log(\'new code\');\n+ // Added comment\n+ const newVar = \'value\';\n```');
+                MockupMessageManager.completeAIResponse();
+            }, 1000);
+        };
+
+        window.testCommandBlock = function() {
+            MockupMessageManager.addUserMessage('Peux-tu exécuter cette commande ?');
+            
+            setTimeout(() => {
+                MockupMessageManager.startAIResponse();
+                MockupMessageManager.addStreamingChunk('J\'exécute la commande pour toi :\n\n```bash\n$ npm run build\n> Building project...\n✓ Build completed successfully\n📦 Output: dist/bundle.js (2.1 MB)\n```');
+                MockupMessageManager.completeAIResponse();
+            }, 1000);
+        };
+
+        window.testStreaming = function() {
+            MockupMessageManager.addUserMessage('Peux-tu m\'expliquer le streaming ?');
+            
+            setTimeout(() => {
+                MockupMessageManager.startAIResponse();
+                
+                const chunks = [
+                    'Le streaming permet de recevoir les réponses de l\'IA en temps réel, ',
+                    'chunk par chunk. Cela améliore l\'expérience utilisateur car vous ',
+                    'pouvez voir la réponse se construire progressivement.\n\n',
+                    '**Avantages :**\n',
+                    '• Réponse plus rapide\n',
+                    '• Meilleure UX\n',
+                    '• Formatage en live\n\n',
+                    'Voici un exemple de code :\n\n',
+                    '```bash\n',
+                    '$ npm run stream\n',
+                    '> Starting stream...\n',
+                    '✓ Stream active\n',
+                    '📦 Processing chunks...\n',
+                    '```'
+                ];
+                
+                let index = 0;
+                const interval = setInterval(() => {
+                    if (index < chunks.length) {
+                        MockupMessageManager.addStreamingChunk(chunks[index]);
+                        index++;
+                    } else {
+                        clearInterval(interval);
+                        MockupMessageManager.completeAIResponse();
+                    }
+                }, 200);
+            }, 1000);
+        };
+
+        window.clearChat = function() {
+            MockupMessageManager.clearConversation();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Input Area - AI Command Bar</title>
+    <link href="css/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="chat-bar">
+        <!-- Onglets de sessions -->
+        <div class="tabs" id="tabs">
+            <div class="tab active" draggable="true" data-session="s1">Session 1</div>
+            <div class="tab" draggable="true" data-session="s2">Session 2</div>
+        </div>
+
+        <!-- Zone de messages -->
+        <div class="chat-messages" id="chatMessages">
+            <div id="conversation-content" class="conversation-content">
+                <!-- Messages de test -->
+                <div class="message user">Test message from user!</div>
+                <div class="message ai">Voici une réponse de test de l'IA.</div>
+            </div>
+        </div>
+
+        <!-- Zone de saisie - EXACTEMENT comme dans le mockup -->
+        <div class="chat-input">
+            <div class="chat-config">
+                <label>Agent</label>
+                <select id="provider">
+                    <option>OpenAI</option>
+                    <option>Anthropic</option>
+                    <option>DeepSeek</option>
+                    <option>Moonshot</option>
+                    <option>Ollama</option>
+                </select>
+                <select id="model"></select>
+            </div>
+            <div class="chat-entry">
+                <textarea id="prompt-input" placeholder="Pose ta question…"></textarea>
+                <button id="send-btn">⏎</button>
+            </div>
+        </div>
+        <div class="chat-status">
+            <span id="context-tokens">0 tokens</span> • 
+            <span id="cost-info">$0.00</span> • 
+            <span id="tokens-info">0</span> • 
+            <span id="latency-info">0s</span>
+        </div>
+    </div>
+
+    <!-- Comparaison avec le mockup original -->
+    <div style="position: fixed; top: 10px; right: 10px; background: #1a1a1d; padding: 10px; border-radius: 6px; border: 1px solid #2a2a2f; width: 300px;">
+        <h4 style="margin: 0 0 10px 0; color: #e8e8ea;">Comparaison Mockup</h4>
+        <p style="margin: 5px 0; color: #888; font-size: 12px;">
+            <strong>Zone de saisie doit correspondre à l'image cible :</strong><br>
+            • Layout vertical (column)<br>
+            • Ligne 1: Agent + Modèle<br>
+            • Ligne 2: Textarea + Button<br>
+            • Textarea: 40px de hauteur<br>
+            • Button carré (32x32px)<br>
+            • Espacement: 8px entre lignes
+        </p>
+        <button onclick="testInput()" style="margin: 5px 0; padding: 5px 10px; background: #3d7bfd; color: white; border: none; border-radius: 4px; cursor: pointer;">Test Input</button>
+    </div>
+
+    <script type="module">
+        import MockupEventsManagerExact from './modules/mockup-events-exact.js';
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing test interface...');
+            MockupEventsManagerExact.initialize();
+        });
+
+        // Test function
+        window.testInput = function() {
+            const textarea = document.getElementById('prompt-input');
+            if (textarea) {
+                textarea.value = 'Test de la zone de saisie avec du contenu long pour voir comment elle se comporte...';
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 160) + 'px';
+            }
+        };
+    </script>
+</body>
+</html>

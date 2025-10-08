@@ -48,8 +48,8 @@
 .custom-theme button:focus-visible,
 .custom-theme select:focus-visible,
 .custom-theme textarea:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
+  outline: none;
+  outline-offset: 0;
 }
 
 /* Custom Theme Enhancements */

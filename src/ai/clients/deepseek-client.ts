@@ -17,16 +17,18 @@ import { loadSystemPrompt } from '../system-prompt-loader';
  */
 export class DeepSeekClient extends BaseAIClient {
     private apiKey: string = '';
+    private timeout: number = 60000; // Default 60 seconds
 
     /**
      * Initialize DeepSeek client
      * Initialiser le client DeepSeek
      */
     async initialize(): Promise<void> {
-        // Read API key from extension configuration
-        // Lire la clé API depuis la configuration de l'extension
+        // Read API key and timeout from extension configuration
+        // Lire la clé API et le timeout depuis la configuration de l'extension
         const config = vscode.workspace.getConfiguration('aiAnalytics');
         const configApiKey = config.get('deepseekApiKey') as string;
+        this.timeout = config.get('apiTimeout') as number || 60000;
 
         // Also check SecretStorage for backward compatibility
         // Vérifier également SecretStorage pour la compatibilité descendante
@@ -174,7 +176,7 @@ export class DeepSeekClient extends BaseAIClient {
      * Discuter avec DeepSeek en utilisant l'API réelle
      */
     private async deepseekChat(prompt: string): Promise<{ content: string; usage?: any; model?: string }> {
-        const apiUrl = 'https://api.deepseek.com/chat/completions';
+        const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
 
         const systemPrompt = loadSystemPrompt();
 
@@ -238,7 +240,7 @@ export class DeepSeekClient extends BaseAIClient {
      * Discuter avec DeepSeek en utilisant l'API réelle avec streaming
      */
     private async deepseekChatStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
-        const apiUrl = 'https://api.deepseek.com/chat/completions';
+        const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
 
         const systemPrompt = loadSystemPrompt();
 
@@ -294,8 +296,15 @@ export class DeepSeekClient extends BaseAIClient {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
-                }
+                },
+                timeout: this.timeout
             };
+
+            // Set up timeout
+            const timeoutId = setTimeout(() => {
+                req.destroy();
+                reject(new Error(`Request timeout after ${this.timeout}ms - DeepSeek API did not respond`));
+            }, this.timeout);
 
             const req = https.request(options, (res) => {
                 let data = '';
@@ -305,6 +314,7 @@ export class DeepSeekClient extends BaseAIClient {
                 });
 
                 res.on('end', () => {
+                    clearTimeout(timeoutId);
                     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         try {
                             const parsedData = JSON.parse(data);
@@ -318,8 +328,19 @@ export class DeepSeekClient extends BaseAIClient {
                 });
             });
 
-            req.on('error', (error) => {
-                reject(new Error(`Network error: ${error.message}`));
+            req.on('error', (error: any) => {
+                clearTimeout(timeoutId);
+                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+                    reject(new Error(`Connection timeout or reset - DeepSeek API may be unavailable: ${error.message}`));
+                } else {
+                    reject(new Error(`Network error: ${error.message}`));
+                }
+            });
+
+            req.on('timeout', () => {
+                req.destroy();
+                clearTimeout(timeoutId);
+                reject(new Error(`Request timeout after ${this.timeout}ms - DeepSeek API did not respond`));
             });
 
             req.write(postData);
@@ -345,8 +366,15 @@ export class DeepSeekClient extends BaseAIClient {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
-                }
+                },
+                timeout: this.timeout
             };
+
+            // Set up timeout
+            const timeoutId = setTimeout(() => {
+                req.destroy();
+                reject(new Error(`Streaming request timeout after ${this.timeout}ms - DeepSeek API did not respond`));
+            }, this.timeout);
 
             let fullContent = '';
             let usage: any = null;
@@ -370,6 +398,7 @@ export class DeepSeekClient extends BaseAIClient {
                             if (dataStr === '[DONE]') {
                                 // Streaming complete
                                 // Streaming terminé
+                                clearTimeout(timeoutId);
                                 resolve({
                                     content: fullContent,
                                     usage
@@ -400,6 +429,7 @@ export class DeepSeekClient extends BaseAIClient {
                 });
 
                 res.on('end', () => {
+                    clearTimeout(timeoutId);
                     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         // If we didn't get [DONE], resolve with what we have
                         // Si nous n'avons pas reçu [DONE], résoudre avec ce que nous avons
@@ -413,8 +443,19 @@ export class DeepSeekClient extends BaseAIClient {
                 });
             });
 
-            req.on('error', (error) => {
-                reject(new Error(`Network error: ${error.message}`));
+            req.on('error', (error: any) => {
+                clearTimeout(timeoutId);
+                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+                    reject(new Error(`Connection timeout or reset - DeepSeek API may be unavailable: ${error.message}`));
+                } else {
+                    reject(new Error(`Network error: ${error.message}`));
+                }
+            });
+
+            req.on('timeout', () => {
+                req.destroy();
+                clearTimeout(timeoutId);
+                reject(new Error(`Streaming request timeout after ${this.timeout}ms - DeepSeek API did not respond`));
             });
 
             req.write(postData);

@@ -1,0 +1,157 @@
+/* Custom Theme for AI Developer Analytics */
+
+/* Custom Theme Body */
+.custom-theme body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Theme Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes thinkingPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes cursorBlink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+/* Custom Theme Focus States */
+.custom-theme button:focus-visible,
+.custom-theme select:focus-visible,
+.custom-theme textarea:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Custom Theme Enhancements */
+.custom-theme .send-btn {
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.custom-theme .send-btn:hover {
+  background: var(--accent-primary);
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.custom-theme .send-btn:active {
+  transform: translateY(0);
+}
+
+.custom-theme .message.ai.thinking {
+  opacity: 0.7;
+  animation: thinkingPulse 2s ease-in-out infinite;
+}
+
+.custom-theme .message.ai.streaming .streaming-cursor {
+  animation: cursorBlink 1s infinite;
+  color: var(--text-primary);
+}
+
+/* Custom Theme Scrollbars */
+.custom-theme .conversation-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-secondary) transparent;
+}
+
+.custom-theme .conversation-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-theme .conversation-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-theme .conversation-container::-webkit-scrollbar-thumb {
+  background: var(--border-secondary);
+  border-radius: 3px;
+}
+
+.custom-theme .conversation-container::-webkit-scrollbar-thumb:hover {
+  background: var(--border-primary);
+}
+
+/* Custom Theme Responsive */
+.custom-theme @media (max-width: 768px) {
+  .ai-command-bar {
+    padding: var(--space-md);
+    gap: var(--space-md);
+  }
+
+  .controls-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .control-group {
+    justify-content: space-between;
+  }
+}
+
+/* Custom Theme Compact Mode */
+.custom-theme .compact-mode .card {
+  padding: var(--space-md);
+  margin-bottom: var(--space-sm);
+}
+
+.custom-theme .compact-mode .conversation-container {
+  max-height: calc(100vh - 250px);
+}
+
+.custom-theme .compact-mode .message {
+  gap: var(--space-sm);
+}
+
+.custom-theme .compact-mode .message-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: var(--font-size-xs);
+}
+
+/* Custom Theme Accessibility */
+.custom-theme @media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
