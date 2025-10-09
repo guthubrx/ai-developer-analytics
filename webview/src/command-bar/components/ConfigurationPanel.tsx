@@ -59,7 +59,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
             </div>
 
             <div className="dropdown-wrapper">
-              <span className="dropdown-icon">🤖</span>
+              <span className="dropdown-icon">🧠</span>
               <select
                 value={configuration.model}
                 onChange={(e) => onChange({ model: e.target.value })}
@@ -76,7 +76,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 ))}
               </select>
               {error && (
-                <span className="error-icon" title={error}>⚠️</span>
+                <span className="error-icon" title={error} style={{ filter: 'grayscale(100%)', opacity: 0.7 }}>⚠️</span>
               )}
             </div>
           </>

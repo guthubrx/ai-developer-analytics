@@ -2,7 +2,7 @@
   "name": "ai-developer-analytics",
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
-  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-09 05:47 CEST",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 09/10/2025 08:55:51 CEST",
   "version": "0.3.10",
   "publisher": "ai-analytics",
   "license": "AGPL-3.0-only",
