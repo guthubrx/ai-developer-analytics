@@ -42,8 +42,7 @@ const PRODUCTION_DEPENDENCIES = {
   'axios': '^1.12.2',
   'crypto-js': '^4.2.0',
   'lru-cache': '^10.0.0',
-  'openai': '^4.0.0',
-  'sql.js': '^1.13.0'
+  'openai': '^4.0.0'
 };
 
 function execCommand(command, options = {}) {

@@ -7,8 +7,6 @@
 // 3. Le format unifié est compatible avec les deux
 // =============================================================================
 
-const fs = require('fs');
-
 console.log('🔍 VÉRIFICATION DES STRUCTURES DE DONNÉES\n');
 console.log('='.repeat(70));
 

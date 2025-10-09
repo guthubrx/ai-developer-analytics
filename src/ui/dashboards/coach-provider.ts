@@ -43,7 +43,7 @@ export class AICoachProvider implements vscode.WebviewViewProvider {
         );
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview): string {
+    private _getHtmlForWebview(_webview: vscode.Webview): string {
         return `
             <!DOCTYPE html>
             <html lang="en">
@@ -117,5 +117,13 @@ export class AICoachProvider implements vscode.WebviewViewProvider {
             type: 'advice',
             content: advice
         });
+    }
+
+    /**
+     * Dispose the provider
+     * Libérer le fournisseur
+     */
+    public dispose(): void {
+        // Clean up any resources if needed
     }
 }

@@ -45,7 +45,7 @@ export class AIDashboardProvider implements vscode.WebviewViewProvider {
         );
     }
 
-    private _getHtmlForWebview(webview: vscode.Webview): string {
+    private _getHtmlForWebview(_webview: vscode.Webview): string {
         return `
             <!DOCTYPE html>
             <html lang="en">
@@ -102,5 +102,13 @@ export class AIDashboardProvider implements vscode.WebviewViewProvider {
 
     private _updateWebview(webviewView: vscode.WebviewView) {
         webviewView.webview.html = this._getHtmlForWebview(webviewView.webview);
+    }
+
+    /**
+     * Dispose the provider
+     * Libérer le fournisseur
+     */
+    public dispose(): void {
+        // Clean up any resources if needed
     }
 }

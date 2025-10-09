@@ -899,14 +899,9 @@ export class ModelChecker {
      * Vérifier les modèles Ollama (local)
      */
     private async checkOllamaModels(): Promise<ModelInfo[]> {
-        try {
-            // Pour l'instant, retourner une liste vide
-            // L'implémentation complète nécessiterait une connexion HTTP locale
-            return [];
-        } catch (error) {
-            console.error('Error fetching Ollama models:', error);
-            return [];
-        }
+        // Pour l'instant, retourner une liste vide
+        // L'implémentation complète nécessiterait une connexion HTTP locale
+        return [];
     }
 
     /**

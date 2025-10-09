@@ -7,6 +7,7 @@ scripts/
 backups/
 temp-extension/
 temp-extension-fixed/
+server-mcp/
 
 # Fichiers de configuration de développement
 tsconfig.json

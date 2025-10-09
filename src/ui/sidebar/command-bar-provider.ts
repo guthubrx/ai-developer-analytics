@@ -392,23 +392,13 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     }
 
     /**
-     * Get HTML for webview - Mockup version
-     * Obtenir le HTML pour la webview - Version Mockup
+     * Get HTML for webview - React version
+     * Obtenir le HTML pour la webview - Version React
      */
     private _getHtmlForWebview(webview: vscode.Webview): string {
-        // Get the local path to main script run in the webview, then convert it to a uri we can use in the webview.
-        // Obtenir le chemin local vers le script principal exécuté dans la webview, puis le convertir en uri utilisable dans la webview.
-        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'main.bundle.js'));
-        const styleMainUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'css', 'main.css'));
-
-        // Pre-generate logo URIs for provider icons
-        const logoUris = {
-            openai: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'openai-logo.png')),
-            anthropic: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'anthropic-logo.png')),
-            deepseek: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'deepseek-logo.png')),
-            moonshot: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'moonshot-logo.png')),
-            ollama: webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'logos', 'ollama-logo.png'))
-        };
+        // Get the React bundle
+        const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'command-bar.bundle.js'));
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'css', 'command-bar.css'));
 
         // Use a nonce to only allow specific scripts to be run
         // Utiliser un nonce pour n'autoriser que des scripts spécifiques à s'exécuter
@@ -420,145 +410,11 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 <meta charset="UTF-8">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}' 'unsafe-eval'; img-src ${webview.cspSource} https: data:;">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <link href="${styleMainUri}" rel="stylesheet">
+                <link href="${styleUri}" rel="stylesheet">
                 <title>AI Command Bar</title>
             </head>
             <body>
-                <div class="chat-bar">
-                    <!-- Loading indicator -->
-                    <div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
-                        <div style="color: #007acc; font-size: 14px;">Chargement de l'interface...</div>
-                    </div>
-
-                    <!-- Main content -->
-                    <div id="main-content" style="display: none;">
-                        <!-- Onglets de sessions -->
-                        <div class="tabs" id="tabs">
-                            <div class="tab active" draggable="true" data-session="s1">Session 1</div>
-                            <div class="tab" draggable="true" data-session="s2">Session 2</div>
-                            <button class="new-session-btn" id="new-session-btn" title="Nouvelle session">+</button>
-                        </div>
-
-                        <!-- Zone de messages qui prend l'espace restant -->
-                        <div class="conversation-container" id="conversation-container">
-                            <div class="chat-messages" id="chatMessages">
-                                <div id="conversation-content" class="conversation-content">
-                                    <!-- Messages will be dynamically added here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Zone de saisie fixée en bas -->
-                    <div class="fixed-bottom-container">
-                        <div class="chat-input">
-                            <div class="chat-config">
-                                <!-- Tous les dropdowns dans le même container -->
-                                <div class="all-dropdowns-container">
-                                    <div class="dropdown-wrapper mode-dropdown">
-                                        <span class="dropdown-icon-left">⚙</span>
-                                        <select id="mode-select">
-                                            <option value="manual">Manual Mode</option>
-                                            <option value="auto">Auto Mode</option>
-                                        </select>
-                                        <span class="dropdown-icon-right">▼</span>
-                                    </div>
-
-                                    <!-- Dropdowns pour Manual Mode -->
-                                    <div class="manual-mode-dropdowns" id="manual-mode-dropdowns" style="display: none;">
-                                        <div class="dropdown-wrapper">
-                                            <span class="dropdown-icon-left">◉</span>
-                                            <select id="provider">
-                                                <option>OpenAI</option>
-                                                <option>Anthropic</option>
-                                                <option>DeepSeek</option>
-                                                <option>Moonshot</option>
-                                                <option>Ollama</option>
-                                            </select>
-                                            <span class="dropdown-icon-right">▼</span>
-                                        </div>
-                                        <div class="dropdown-wrapper">
-                                            <span class="dropdown-icon-left">🤖</span>
-                                            <select id="model"></select>
-                                            <span class="dropdown-icon-right">▼</span>
-                                        </div>
-                                    </div>
-
-                                    <!-- Dropdowns pour Auto Mode -->
-                                    <div class="auto-mode-dropdowns" id="auto-mode-dropdowns">
-                                        <div class="dropdown-wrapper">
-                                            <span class="dropdown-icon-left">◯</span>
-                                            <select id="task-select">
-                                                <option value="general">General</option>
-                                                <option value="code">Code</option>
-                                                <option value="documentation">Documentation</option>
-                                                <option value="debug">Debug</option>
-                                            </select>
-                                            <span class="dropdown-icon-right">▼</span>
-                                        </div>
-                                        <div class="dropdown-wrapper">
-                                            <span class="dropdown-icon-left">◐</span>
-                                            <select id="routing-mode">
-                                                <option value="eco">Eco</option>
-                                                <option value="normal">Normal</option>
-                                                <option value="quality">Quality</option>
-                                                <option value="strict-json">Strict JSON</option>
-                                                <option value="creative">Creative</option>
-                                            </select>
-                                            <span class="dropdown-icon-right">▼</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Bouton de sauvegarde à droite -->
-                                <div class="save-config-container">
-                                    <button class="save-config-btn" id="save-config-btn" title="Sauvegarder la configuration">
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="chat-entry">
-                                <textarea id="prompt-input" placeholder="Pose ta question…"></textarea>
-                                <button id="send-btn">⏎</button>
-                            </div>
-                        </div>
-                        <div class="chat-status">
-                            <span id="context-tokens">0 tokens</span> •
-                            <span id="cost-info">$0.00</span> •
-                            <span id="tokens-info">0</span> •
-                            <span id="latency-info">0s</span>
-                        </div>
-                    </div>
-                    
-                    <!-- Notification toast -->
-                    <div class="notification-toast" id="notification-toast">
-                        <span class="notification-message" id="notification-message"></span>
-                        </div>
-                    </div>
-                </div>
-
-                <script nonce="${nonce}">
-                    // Show loading indicator initially
-                    document.getElementById('loading-indicator').style.display = 'block';
-
-                    // Wait for DOM to be ready
-                    document.addEventListener('DOMContentLoaded', function() {
-                        // Hide loading indicator and show main content
-                        setTimeout(() => {
-                            document.getElementById('loading-indicator').style.display = 'none';
-                            document.getElementById('main-content').style.display = 'block';
-
-                            // Notify extension that webview is ready
-                            if (window.acquireVsCodeApi) {
-                                const vscode = acquireVsCodeApi();
-                                vscode.postMessage({
-                                    type: 'webviewReady'
-                                });
-                            }
-                        }, 100);
-                    });
-
-                    window.logoUris = ${JSON.stringify(logoUris)};
-                </script>
+                <div id="root"></div>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
             </html>`;
@@ -631,7 +487,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private async applyUnifiedDiff(diffText: string, relativePath?: string) {
         // Try to detect file from diff header if not provided
         let target = relativePath;
-        const fileMatch = diffText.match(/^\+\+\+\s+[ab\/]*([^\n]+)|^diff --git a\/([^\n]+) b\/([^\n]+)/m);
+        const fileMatch = diffText.match(/^\+\+\+\s+[ab/]*([^\n]+)|^diff --git a\/([^\n]+) b\/([^\n]+)/m);
         if (!target && fileMatch) {
             target = fileMatch[1] || fileMatch[2] || fileMatch[3];
         }
@@ -717,6 +573,14 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 });
             }
         }
+    }
+
+    /**
+     * Dispose the provider
+     * Libérer le fournisseur
+     */
+    public dispose(): void {
+        // Clean up any resources if needed
     }
 }
 

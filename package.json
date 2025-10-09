@@ -2,7 +2,7 @@
   "name": "ai-developer-analytics",
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
-  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-08 19:10 CEST",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-09 03:56 CEST",
   "version": "0.3.10",
   "publisher": "ai-analytics",
   "license": "AGPL-3.0-only",
@@ -303,7 +303,7 @@
   ],
   "scripts": {
     "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./ && npm run build:mcp && npm run build:frontend",
+    "compile": "tsc -p ./ && npm run build:mcp && npm run build:webview",
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
@@ -314,8 +314,8 @@
     "publish": "vsce publish",
     "build:mcp": "cd server-mcp && npm run build",
     "test:mcp": "cd server-mcp && npm test",
-    "build:frontend": "tsup --config tsup.config.js",
-    "watch:frontend": "tsup --config tsup.config.js --watch",
+    "build:webview": "node scripts/build-webview.js",
+    "dev:webview": "cd webview && npm run dev",
     "pre-build-check": "node scripts/pre-build-check.js",
     "secure-build": "node scripts/secure-build.js",
     "fix-dependencies": "node scripts/dependency-manager.js",
@@ -342,6 +342,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.25.0",
     "axios": "^1.12.2",
+    "crypto-js": "^4.2.0",
     "lru-cache": "^10.0.0",
     "openai": "^4.0.0"
   }

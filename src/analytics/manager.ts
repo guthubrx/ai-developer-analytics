@@ -22,7 +22,7 @@ interface AnalyticsData {
         cost: number;
         success: number;
         cache_hit: number;
-        error?: string;
+        error?: string | undefined;
         timestamp: number;
     }>;
 }
@@ -88,7 +88,7 @@ export class AnalyticsManager {
                 cost: request.cost,
                 success: request.success ? 1 : 0,
                 cache_hit: request.cacheHit ? 1 : 0,
-                error: request.error || undefined,
+                error: request.error,
                 timestamp
             });
 

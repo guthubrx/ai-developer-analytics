@@ -37,6 +37,13 @@ A comprehensive VS Code/Cursor extension for AI developer analytics with dual-le
 - Module reloading without VS Code restart
 - State preservation
 
+### 🎨 Modern WebView Architecture
+- **React 18** with TypeScript for type safety
+- **Vite** for fast development and optimized builds
+- **Component-based** architecture with hooks
+- **CSS Modules** and modern styling
+- **VS Code API** integration with proper typing
+
 ### 🔐 Security & Privacy
 - CSP enforcement for WebViews
 - VS Code SecretStorage for API keys
@@ -45,15 +52,27 @@ A comprehensive VS Code/Cursor extension for AI developer analytics with dual-le
 
 ## Architecture
 
+### Modern React/Vite WebView Architecture
+
 ```
-src/
+webview/                    # Modern React/Vite webview
+├─ src/
+│  ├─ command-bar/          # AI Command Bar React app
+│  │  ├─ components/        # React components
+│  │  ├─ hooks/             # Custom React hooks
+│  │  ├─ styles/            # CSS modules and global styles
+│  │  └─ types/             # TypeScript definitions
+│  └─ vite.config.ts        # Vite build configuration
+└─ package.json             # React dependencies
+
+src/                        # VS Code Extension Core
 ├─ ai/
 │  ├─ router/              # Local + delegated routing
 │  ├─ clients/             # OpenAI, Anthropic, DeepSeek, Ollama
 │  ├─ cache/               # Exact + semantic + LRU caching
 │  └─ metrics/             # Cost, latency, success tracking
 ├─ ui/
-│  ├─ sidebar/             # AI Command Bar
+│  ├─ sidebar/             # WebView providers
 │  ├─ dashboards/          # Ops Router · BI · Coach
 │  └─ panels/              # Routing Selector · Settings · History
 ├─ analytics/              # SQLite AES (local)
@@ -115,8 +134,10 @@ Set up API keys in VS Code settings:
 - VS Code Extension Development
 
 ### Commands
-- `npm run compile` - Compile TypeScript
-- `npm run watch` - Watch for changes
+- `npm run compile` - Compile TypeScript + MCP + WebView
+- `npm run watch` - Watch for TypeScript changes
+- `npm run build:webview` - Build React/Vite webview
+- `npm run dev:webview` - Development server for webview
 - `npm run test` - Run tests
 - `npm run package` - Create VSIX package
 
