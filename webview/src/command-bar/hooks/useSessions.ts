@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { VSCodeAPI, Session, Message } from '../types';
 
 export const useSessions = (vscode: VSCodeAPI) => {
