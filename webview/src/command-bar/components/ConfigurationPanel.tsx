@@ -1,5 +1,6 @@
-import React from 'react';
-import type { Settings } from '../types';
+import React, { useEffect } from 'react';
+import { useModels } from '../hooks/useModels';
+import type { Settings, VSCodeAPI } from '../types';
 
 interface ConfigurationPanelProps {
   configuration: {
@@ -12,6 +13,7 @@ interface ConfigurationPanelProps {
   settings: Settings;
   onChange: (config: Partial<typeof configuration>) => void;
   onUpdateSettings: (settings: Partial<Settings>) => void;
+  vscode: VSCodeAPI;
 }
 
 export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
@@ -19,8 +21,10 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   settings,
   onChange,
   onUpdateSettings,
+  vscode,
 }) => {
   const isManualMode = configuration.mode === 'manual';
+  const { models, loading, error } = useModels(vscode, configuration.provider);
 
   return (
     <div className="configuration-panel">
@@ -60,10 +64,20 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 value={configuration.model}
                 onChange={(e) => onChange({ model: e.target.value })}
                 style={{ fontSize: `${settings.dropdownFontSize}px` }}
+                disabled={loading}
               >
-                <option value="">Select Model</option>
-                {/* Models will be populated dynamically */}
+                <option value="">
+                  {loading ? 'Loading models...' : 'Select Model'}
+                </option>
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
               </select>
+              {error && (
+                <span className="error-icon" title={error}>⚠️</span>
+              )}
             </div>
           </>
         ) : (

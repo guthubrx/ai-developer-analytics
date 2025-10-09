@@ -9,7 +9,7 @@ export const useSessions = (vscode: VSCodeAPI) => {
 
   const createSession = useCallback(() => {
     const newSession: Session = {
-      id: `session-${Date.now()}`,
+      id: `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: `Session ${sessions.length + 1}`,
       messages: [],
       createdAt: new Date(),

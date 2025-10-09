@@ -6,12 +6,14 @@ interface InputPanelProps {
   onExecutePrompt: (prompt: string, routingMode: string, provider?: string) => void;
   settings: Settings;
   onUpdateSettings: (settings: Partial<Settings>) => void;
+  vscode: any;
 }
 
 export const InputPanel: React.FC<InputPanelProps> = ({
   onExecutePrompt,
   settings,
   onUpdateSettings,
+  vscode,
 }) => {
   const [prompt, setPrompt] = useState('');
   const [configuration, setConfiguration] = useState({
@@ -53,6 +55,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
         settings={settings}
         onChange={handleConfigurationChange}
         onUpdateSettings={onUpdateSettings}
+        vscode={vscode}
       />
 
       <form onSubmit={handleSubmit} className="input-form">

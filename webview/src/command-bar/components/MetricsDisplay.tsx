@@ -29,6 +29,20 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({ metrics }) => {
           <strong>Requests:</strong> {metrics.totalRequests}
         </span>
       </div>
+      {(metrics.buildTimestamp || metrics.version) && (
+        <div className="metrics-row build-info">
+          {metrics.version && (
+            <span className="metric-item">
+              <strong>Version:</strong> v{metrics.version}
+            </span>
+          )}
+          {metrics.buildTimestamp && (
+            <span className="metric-item">
+              <strong>Build:</strong> {metrics.buildTimestamp}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 };

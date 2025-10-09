@@ -127,6 +127,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                     case 'checkProviderModels':
                         await this.handleCheckProviderModels(data.provider, data.messageId);
                         break;
+                    case 'getModels':
+                        await this.handleGetModels(data.provider);
+                        break;
                     case 'webviewReady':
                         console.log('WebView is ready and loaded');
                         // Send initial settings when webview is ready
@@ -435,14 +438,31 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private async handleLoadMetrics() {
         if (this._view) {
             const savedMetrics = this.context.globalState.get('sessionMetrics');
+
+            // Charger les informations de build
+            let buildInfo = { buildTimestamp: null, version: null };
+            try {
+                const buildInfoPath = require('path').join(__dirname, '..', '..', '..', 'build-info.json');
+                const fs = require('fs');
+                if (fs.existsSync(buildInfoPath)) {
+                    buildInfo = JSON.parse(fs.readFileSync(buildInfoPath, 'utf8'));
+                }
+            } catch (error) {
+                console.warn('Impossible de charger les informations de build:', error instanceof Error ? error.message : String(error));
+            }
+
             this._view.webview.postMessage({
                 type: 'metricsLoaded',
-                metrics: savedMetrics || {
-                    totalCost: 0,
-                    totalTokens: 0,
-                    latestLatency: 0,
-                    cacheHits: 0,
-                    totalRequests: 0
+                metrics: {
+                    ...(savedMetrics || {
+                        totalCost: 0,
+                        totalTokens: 0,
+                        latestLatency: 0,
+                        cacheHits: 0,
+                        totalRequests: 0
+                    }),
+                    buildTimestamp: buildInfo.buildTimestamp,
+                    version: buildInfo.version
                 }
             });
         }
@@ -552,7 +572,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private async handleCheckProviderModels(provider: string, messageId: string) {
         try {
             const models = await this.modelChecker.checkProviderModels(provider);
-            
+
             if (this._view) {
                 this._view.webview.postMessage({
                     type: 'apiModelsResponse',
@@ -563,12 +583,40 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             }
         } catch (error) {
             console.error(`Error checking models for ${provider}:`, error);
-            
+
             if (this._view) {
                 this._view.webview.postMessage({
                     type: 'apiModelsResponse',
                     messageId: messageId,
                     success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
+            }
+        }
+    }
+
+    /**
+     * Handle get models request from webview
+     * Gérer la demande de récupération des modèles depuis la webview
+     */
+    private async handleGetModels(provider: string) {
+        try {
+            const models = await this.modelChecker.checkProviderModels(provider);
+
+            if (this._view) {
+                this._view.webview.postMessage({
+                    type: 'modelsLoaded',
+                    provider: provider,
+                    models: models
+                });
+            }
+        } catch (error) {
+            console.error(`Error getting models for ${provider}:`, error);
+
+            if (this._view) {
+                this._view.webview.postMessage({
+                    type: 'modelsError',
+                    provider: provider,
                     error: error instanceof Error ? error.message : 'Unknown error'
                 });
             }

@@ -2,7 +2,7 @@
   "name": "ai-developer-analytics",
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
-  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-09 03:56 CEST",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 2025-10-09 05:47 CEST",
   "version": "0.3.10",
   "publisher": "ai-analytics",
   "license": "AGPL-3.0-only",
@@ -323,7 +323,10 @@
     "build:force": "rm -rf node_modules package-lock.json && npm install && npm run build:safe",
     "validate": "npm run pre-build-check",
     "test:build-system": "node scripts/test-build-system.js",
-    "post-build-validation": "node scripts/post-build-validation.js"
+    "post-build-validation": "node scripts/post-build-validation.js",
+    "deploy": "node scripts/deploy.js",
+    "deploy:next": "npm version patch && node scripts/deploy.js",
+    "commit": "node scripts/smart-commit.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",

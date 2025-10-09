@@ -71,6 +71,8 @@ export interface Metrics {
   latestLatency: number;
   cacheHits: number;
   totalRequests: number;
+  buildTimestamp?: string;
+  version?: string;
 }
 
 // Provider types
