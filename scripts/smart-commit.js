@@ -126,10 +126,27 @@ function generateCommitMessage(changes) {
     return commitMessage;
 }
 
+// Fonction pour obtenir le message de commit (personnalisé ou généré)
+function getCommitMessage(changes, customMessage) {
+    if (customMessage) {
+        console.log('💡 Utilisation du message personnalisé fourni');
+        return customMessage;
+    }
+    return generateCommitMessage(changes);
+}
+
 // Fonction principale
 async function main() {
     console.log('🚀 Commit intelligent pour AI Developer Analytics');
     console.log('─'.repeat(50));
+
+    // Vérifier les arguments
+    const args = process.argv.slice(2);
+    const customMessage = args.length > 0 ? args.join(' ') : null;
+
+    if (customMessage) {
+        console.log(`📝 Message personnalisé: ${customMessage}`);
+    }
 
     // Vérifier que nous sommes dans un dépôt git
     try {
@@ -154,8 +171,8 @@ async function main() {
     // Réanalyser après l'ajout
     const finalChanges = analyzeChanges();
 
-    // Étape 3: Générer le message de commit
-    const commitMessage = generateCommitMessage(finalChanges);
+    // Étape 3: Obtenir le message de commit
+    const commitMessage = getCommitMessage(finalChanges, customMessage);
 
     console.log('\n📋 Message de commit généré:');
     console.log('─'.repeat(50));

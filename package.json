@@ -326,7 +326,8 @@
     "post-build-validation": "node scripts/post-build-validation.js",
     "deploy": "node scripts/deploy.js",
     "deploy:next": "npm version patch && node scripts/deploy.js",
-    "commit": "node scripts/smart-commit.js"
+    "commit": "node scripts/smart-commit.js",
+    "commit:custom": "node scripts/smart-commit.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
