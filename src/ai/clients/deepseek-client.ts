@@ -54,7 +54,7 @@ export class DeepSeekClient extends BaseAIClient {
      * Execute prompt using DeepSeek
      * Exécuter un prompt avec DeepSeek
      */
-    async execute(prompt: string): Promise<AIResponse> {
+    async execute(prompt: string, model?: string): Promise<AIResponse> {
         console.log(`[DeepSeek] Starting execution for prompt: "${prompt.substring(0, 50)}..."`);
 
         if (!this.isInitialized) {
@@ -72,9 +72,9 @@ export class DeepSeekClient extends BaseAIClient {
             // Use real DeepSeek API
             // Utiliser l'API DeepSeek réelle
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const configuredModel = config.get('deepseekModel') as string;
+            const configuredModel = model || (config.get('deepseekModel') as string);
 
-            const apiResponse = await this.deepseekChat(prompt);
+            const apiResponse = await this.deepseekChat(prompt, configuredModel);
             const latency = Date.now() - startTime;
 
             // Extract real metrics from API response
@@ -104,7 +104,7 @@ export class DeepSeekClient extends BaseAIClient {
      * Execute prompt using DeepSeek with real streaming
      * Exécuter un prompt avec DeepSeek avec vrai streaming
      */
-    override async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+    override async executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
         console.log(`[DeepSeek] Starting streaming execution for prompt: "${prompt.substring(0, 50)}..."`);
 
         if (!this.isInitialized) {
@@ -122,9 +122,9 @@ export class DeepSeekClient extends BaseAIClient {
             // Use real DeepSeek API with streaming
             // Utiliser l'API DeepSeek réelle avec streaming
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const configuredModel = config.get('deepseekModel') as string;
+            const configuredModel = model || (config.get('deepseekModel') as string);
 
-            const apiResponse = await this.deepseekChatStreaming(prompt, streamingCallback);
+            const apiResponse = await this.deepseekChatStreaming(prompt, configuredModel, streamingCallback);
             const latency = Date.now() - startTime;
 
             // Extract real metrics from API response
@@ -187,14 +187,14 @@ export class DeepSeekClient extends BaseAIClient {
      * Chat with DeepSeek using real API
      * Discuter avec DeepSeek en utilisant l'API réelle
      */
-    private async deepseekChat(prompt: string): Promise<{ content: string; usage?: any; model?: string }> {
+    private async deepseekChat(prompt: string, model?: string): Promise<{ content: string; usage?: any; model?: string }> {
         const apiUrl = getChatUrl('deepseek');
 
         const systemPrompt = loadSystemPrompt();
 
-        // Get configured model from settings
+        // Get configured model from parameter or settings
         const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const configuredModel = config.get('deepseekModel') as string;
+        const configuredModel = model || (config.get('deepseekModel') as string);
 
         if (!configuredModel || configuredModel.trim() === '') {
             // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
@@ -264,14 +264,14 @@ export class DeepSeekClient extends BaseAIClient {
      * Chat with DeepSeek using real API with streaming
      * Discuter avec DeepSeek en utilisant l'API réelle avec streaming
      */
-    private async deepseekChatStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
+    private async deepseekChatStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
         const apiUrl = getChatUrl('deepseek');
 
         const systemPrompt = loadSystemPrompt();
 
-        // Get configured model from settings
+        // Get configured model from parameter or settings
         const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const configuredModel = config.get('deepseekModel') as string;
+        const configuredModel = model || (config.get('deepseekModel') as string);
 
         if (!configuredModel || configuredModel.trim() === '') {
             // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
@@ -301,10 +301,14 @@ export class DeepSeekClient extends BaseAIClient {
         try {
             console.log(`[DeepSeek] Sending streaming request to API: ${apiUrl}`);
 
-            const response = await this.makeStreamingApiRequest(apiUrl, requestBody, streamingCallback);
-            console.log(`[DeepSeek] Streaming API response completed`);
-
-            return response;
+            if (streamingCallback) {
+                const response = await this.makeStreamingApiRequest(apiUrl, requestBody, streamingCallback);
+                console.log(`[DeepSeek] Streaming API response completed`);
+                return response;
+            } else {
+                // Fallback to normal execution if no streaming callback
+                return await this.deepseekChat(prompt, model);
+            }
 
         } catch (error) {
             console.error('[DeepSeek] Streaming API call failed:', error);
@@ -312,7 +316,7 @@ export class DeepSeekClient extends BaseAIClient {
             // Fallback to normal API call if streaming fails
             // Retour à l'appel API normal si le streaming échoue
             console.log('[DeepSeek] Streaming failed, falling back to normal API');
-            return await this.deepseekChat(prompt);
+            return await this.deepseekChat(prompt, model);
         }
     }
 

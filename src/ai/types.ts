@@ -58,8 +58,8 @@ export interface StreamingCallback {
  * Interface client IA
  */
 export interface AIClient {
-    execute(prompt: string): Promise<AIResponse>;
-    executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse>;
+    execute(prompt: string, model?: string): Promise<AIResponse>;
+    executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse>;
     isAvailable(): Promise<boolean>;
     getProvider(): AIProvider;
 }

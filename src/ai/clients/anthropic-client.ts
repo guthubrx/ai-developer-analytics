@@ -54,7 +54,7 @@ export class AnthropicClient extends BaseAIClient {
      * Execute prompt using Anthropic
      * Exécuter un prompt avec Anthropic
      */
-    async execute(prompt: string): Promise<AIResponse> {
+    async execute(prompt: string, model?: string): Promise<AIResponse> {
         console.log(`[Anthropic] Starting execution for prompt: "${prompt.substring(0, 50)}..."`);
 
         if (!this.isInitialized) {
@@ -72,9 +72,9 @@ export class AnthropicClient extends BaseAIClient {
             // Use real Anthropic API
             // Utiliser l'API Anthropic réelle
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const configuredModel = config.get('anthropicModel') as string;
+            const configuredModel = model || (config.get('anthropicModel') as string);
 
-            const apiResponse = await this.anthropicChat(prompt, false);
+            const apiResponse = await this.anthropicChat(prompt, configuredModel, false);
             const latency = Date.now() - startTime;
 
             // Extract real metrics from API response
@@ -104,7 +104,7 @@ export class AnthropicClient extends BaseAIClient {
      * Execute prompt with streaming
      * Exécuter un prompt avec streaming
      */
-    override async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+    override async executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
         console.log(`[Anthropic] Starting streaming execution for prompt: "${prompt.substring(0, 50)}..."`);
 
         if (!this.isInitialized) {
@@ -120,9 +120,9 @@ export class AnthropicClient extends BaseAIClient {
 
         try {
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const configuredModel = config.get('anthropicModel') as string;
+            const configuredModel = model || (config.get('anthropicModel') as string);
 
-            const apiResponse = await this.anthropicChat(prompt, true, streamingCallback);
+            const apiResponse = await this.anthropicChat(prompt, configuredModel, true, streamingCallback);
             const latency = Date.now() - startTime;
 
             const inputTokens = apiResponse.usage?.input_tokens || this.calculateTokens(prompt);
@@ -183,13 +183,13 @@ export class AnthropicClient extends BaseAIClient {
      * Chat with Anthropic using real API
      * Discuter avec Anthropic en utilisant l'API réelle
      */
-    private async anthropicChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
+    private async anthropicChat(prompt: string, model?: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
         const apiUrl = getChatUrl('anthropic');
         const systemPrompt = loadSystemPrompt();
 
-        // Get configured model from settings
+        // Get configured model from parameter or settings
         const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const configuredModel = config.get('anthropicModel') as string;
+        const configuredModel = model || (config.get('anthropicModel') as string);
 
         if (!configuredModel || configuredModel.trim() === '') {
             // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle

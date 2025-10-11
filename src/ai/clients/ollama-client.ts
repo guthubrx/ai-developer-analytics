@@ -49,7 +49,7 @@ export class OllamaClient extends BaseAIClient {
      * Execute prompt using Ollama
      * Exécuter un prompt avec Ollama
      */
-    async execute(prompt: string): Promise<AIResponse> {
+    async execute(prompt: string, model?: string): Promise<AIResponse> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -57,7 +57,8 @@ export class OllamaClient extends BaseAIClient {
         const startTime = Date.now();
 
         try {
-            const response = await this.ollamaChat(this.defaultModel, prompt);
+            const targetModel = model || this.defaultModel;
+            const response = await this.ollamaChat(targetModel, prompt);
             const latency = Date.now() - startTime;
 
             const inputTokens = this.calculateTokens(prompt);
@@ -70,7 +71,7 @@ export class OllamaClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: this.defaultModel
+                model: targetModel
             };
         } catch (error) {
             throw new Error(`Ollama execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);

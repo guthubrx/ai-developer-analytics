@@ -100,19 +100,20 @@ export class AIRouter {
      */
     private async executeDirect(
         prompt: string,
-        provider: AIProvider
+        provider: AIProvider,
+        model?: string
     ): Promise<AIResponse> {
         switch (provider) {
             case 'openai':
-                return await this.clientManager.openAIClient.execute(prompt);
+                return await this.clientManager.openAIClient.execute(prompt, model);
             case 'anthropic':
-                return await this.clientManager.anthropicClient.execute(prompt);
+                return await this.clientManager.anthropicClient.execute(prompt, model);
             case 'deepseek':
-                return await this.clientManager.deepseekClient.execute(prompt);
+                return await this.clientManager.deepseekClient.execute(prompt, model);
             case 'ollama':
-                return await this.clientManager.ollamaClient.execute(prompt);
+                return await this.clientManager.ollamaClient.execute(prompt, model);
             case 'moonshot':
-                return await this.clientManager.moonshotClient.execute(prompt);
+                return await this.clientManager.moonshotClient.execute(prompt, model);
             default:
                 throw new Error(`Unsupported provider: ${provider}`);
         }
@@ -160,6 +161,7 @@ export class AIRouter {
         prompt: string,
         routingMode: AIRoutingMode,
         selectedProvider?: AIProvider | 'auto',
+        model?: string,
         streamingCallback?: StreamingCallback,
         conversationContext?: any[]
     ): Promise<AIResponse> {
@@ -174,7 +176,7 @@ export class AIRouter {
             // Level 1: Direct execution (manual selection) - PRIORITAIRE
             // Niveau 1 : Exécution directe (sélection manuelle) - PRIORITAIRE
             if (selectedProvider && selectedProvider !== 'auto') {
-                response = await this.executeDirectWithStreaming(enrichedPrompt, selectedProvider as AIProvider, streamingCallback);
+                response = await this.executeDirectWithStreaming(enrichedPrompt, selectedProvider as AIProvider, model, streamingCallback);
             }
             // Level 2: Intelligent routing (automatic/delegated)
             // Niveau 2 : Routage intelligent (automatique/délégué)
@@ -229,6 +231,7 @@ export class AIRouter {
     private async executeDirectWithStreaming(
         prompt: string,
         provider: AIProvider,
+        model?: string,
         streamingCallback?: StreamingCallback
     ): Promise<AIResponse> {
         // Use the client's streaming method if available
@@ -236,22 +239,22 @@ export class AIRouter {
         if (streamingCallback) {
             switch (provider) {
                 case 'openai':
-                    return await this.clientManager.openAIClient.executeWithStreaming(prompt, streamingCallback);
+                    return await this.clientManager.openAIClient.executeWithStreaming(prompt, model, streamingCallback);
                 case 'anthropic':
-                    return await this.clientManager.anthropicClient.executeWithStreaming(prompt, streamingCallback);
+                    return await this.clientManager.anthropicClient.executeWithStreaming(prompt, model, streamingCallback);
                 case 'deepseek':
-                    return await this.clientManager.deepseekClient.executeWithStreaming(prompt, streamingCallback);
+                    return await this.clientManager.deepseekClient.executeWithStreaming(prompt, model, streamingCallback);
                 case 'ollama':
-                    return await this.clientManager.ollamaClient.executeWithStreaming(prompt, streamingCallback);
+                    return await this.clientManager.ollamaClient.executeWithStreaming(prompt, model, streamingCallback);
                 case 'moonshot':
-                    return await this.clientManager.moonshotClient.executeWithStreaming(prompt, streamingCallback);
+                    return await this.clientManager.moonshotClient.executeWithStreaming(prompt, model, streamingCallback);
                 default:
                     throw new Error(`Unsupported provider: ${provider}`);
             }
         } else {
             // Fallback to normal execution if no streaming callback
             // Retour à l'exécution normale si pas de callback de streaming
-            return await this.executeDirect(prompt, provider);
+            return await this.executeDirect(prompt, provider, model);
         }
     }
 
@@ -288,7 +291,7 @@ export class AIRouter {
                 selectedProvider = this.localRouter(prompt, complexity);
         }
 
-        return await this.executeDirectWithStreaming(prompt, selectedProvider, streamingCallback);
+        return await this.executeDirectWithStreaming(prompt, selectedProvider, undefined, streamingCallback);
     }
 
     /**

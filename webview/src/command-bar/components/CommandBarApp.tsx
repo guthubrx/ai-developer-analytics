@@ -134,12 +134,13 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
     };
   }, [vscode, handleMessage]);
 
-  const handleExecutePrompt = useCallback((prompt: string, routingMode: string, provider?: string) => {
+  const handleExecutePrompt = useCallback((prompt: string, routingMode: string, provider?: string, model?: string) => {
     vscode.postMessage({
       type: 'executePrompt',
       prompt,
       routingMode,
       provider,
+      model,
       conversationContext: currentSession?.messages || []
     });
   }, [vscode, currentSession]);

@@ -37,21 +37,17 @@ export class MoonshotClient extends BaseAIClient {
     }
 
 
-    async execute(prompt: string): Promise<AIResponse> {
+    async execute(prompt: string, model?: string): Promise<AIResponse> {
         if (!this.isInitialized) await this.initialize();
         if (!this.apiKey) throw new Error('Moonshot API key not configured');
 
         const startTime = Date.now();
-        const apiResponse = await this.kimiChat(prompt, false);
+        const apiResponse = await this.kimiChat(prompt, model, false);
         const latency = Date.now() - startTime;
 
         const inputTokens = apiResponse.usage?.prompt_tokens || this.calculateTokens(prompt);
         const outputTokens = apiResponse.usage?.completion_tokens || this.calculateTokens(apiResponse.content);
         const totalTokens = apiResponse.usage?.total_tokens || inputTokens + outputTokens;
-
-        // Get configured model for response
-        const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const configuredModel = config.get('moonshotDefaultModel') as string;
 
         return {
             content: apiResponse.content,
@@ -60,25 +56,21 @@ export class MoonshotClient extends BaseAIClient {
             cost: this.calculateCost(inputTokens, outputTokens),
             latency,
             cacheHit: false,
-            model: apiResponse.model || configuredModel // Use model from API response or configured model
+            model: apiResponse.model || model || 'moonshot-v1-8k' // Use model from API response, provided model, or default
         };
     }
 
-    override async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+    override async executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
         if (!this.isInitialized) await this.initialize();
         if (!this.apiKey) throw new Error('Moonshot API key not configured');
 
         const startTime = Date.now();
-        const apiResponse = await this.kimiChat(prompt, true, streamingCallback);
+        const apiResponse = await this.kimiChat(prompt, model, true, streamingCallback);
         const latency = Date.now() - startTime;
 
         const inputTokens = apiResponse.usage?.prompt_tokens || this.calculateTokens(prompt);
         const outputTokens = apiResponse.usage?.completion_tokens || this.calculateTokens(apiResponse.content);
         const totalTokens = apiResponse.usage?.total_tokens || inputTokens + outputTokens;
-
-        // Get configured model for response
-        const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const configuredModel = config.get('moonshotDefaultModel') as string;
 
         return {
             content: apiResponse.content,
@@ -87,7 +79,7 @@ export class MoonshotClient extends BaseAIClient {
             cost: this.calculateCost(inputTokens, outputTokens),
             latency,
             cacheHit: false,
-            model: apiResponse.model || configuredModel
+            model: apiResponse.model || model || 'moonshot-v1-8k' // Use model from API response, provided model, or default
         };
     }
 
@@ -106,15 +98,17 @@ export class MoonshotClient extends BaseAIClient {
         this.apiKey = apiKey;
     }
 
-    private async kimiChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
+    private async kimiChat(prompt: string, model?: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
         // Endpoint and payload based on Moonshot docs
         // https://platform.moonshot.ai/docs/guide/start-using-kimi-api
         const apiUrl = getChatUrl('moonshot');
         const systemPrompt = loadSystemPrompt();
-        const vscodeConfig = vscode.workspace.getConfiguration('aiAnalytics');
-        const defaultModel = vscodeConfig.get('moonshotDefaultModel') as string;
 
-        if (!defaultModel || defaultModel.trim() === '') {
+        // Use provided model or fallback to configured model
+        const vscodeConfig = vscode.workspace.getConfiguration('aiAnalytics');
+        const configuredModel = model || (vscodeConfig.get('moonshotDefaultModel') as string);
+
+        if (!configuredModel || configuredModel.trim() === '') {
             // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
             if (this.apiKey && this.apiKey.trim() !== '') {
                 throw new Error('Moonshot model not configured - please select a model in settings');
@@ -123,7 +117,7 @@ export class MoonshotClient extends BaseAIClient {
             throw new Error('Moonshot API key not configured');
         }
         const requestBody = {
-            model: defaultModel,
+            model: configuredModel,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }

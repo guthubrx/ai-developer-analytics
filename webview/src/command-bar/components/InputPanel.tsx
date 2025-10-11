@@ -24,7 +24,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
     if (!prompt.trim()) return;
 
     if (configuration.mode === 'manual') {
-      onExecutePrompt(prompt, configuration.routingMode, configuration.provider);
+      onExecutePrompt(prompt, configuration.routingMode, configuration.provider, configuration.model);
     } else {
       onExecutePrompt(prompt, configuration.routingMode);
     }

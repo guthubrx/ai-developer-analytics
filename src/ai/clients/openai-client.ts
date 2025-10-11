@@ -30,7 +30,7 @@ export class OpenAIClient extends BaseAIClient {
      * Execute prompt using OpenAI
      * Exécuter un prompt avec OpenAI
      */
-    async execute(prompt: string): Promise<AIResponse> {
+    async execute(prompt: string, model?: string): Promise<AIResponse> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -45,13 +45,13 @@ export class OpenAIClient extends BaseAIClient {
             // In a real implementation, this would use the OpenAI SDK
             // Dans une implémentation réelle, cela utiliserait le SDK OpenAI
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const defaultModel = config.get('openaiDefaultModel') as string;
+            const defaultModel = model || (config.get('openaiDefaultModel') as string);
 
             if (!defaultModel || defaultModel.trim() === '') {
                 throw new Error('OpenAI model not configured - please select a model in settings');
             }
 
-            const response = await this.openAIChat(prompt, false);
+            const response = await this.openAIChat(prompt, defaultModel, false);
             const latency = Date.now() - startTime;
 
             const inputTokens = this.calculateTokens(prompt);
@@ -75,7 +75,7 @@ export class OpenAIClient extends BaseAIClient {
      * Execute prompt with streaming
      * Exécuter un prompt avec streaming
      */
-    override async executeWithStreaming(prompt: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
+    override async executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
         if (!this.isInitialized) {
             await this.initialize();
         }
@@ -88,13 +88,13 @@ export class OpenAIClient extends BaseAIClient {
 
         try {
             const config = vscode.workspace.getConfiguration('aiAnalytics');
-            const defaultModel = config.get('openaiDefaultModel') as string;
+            const defaultModel = model || (config.get('openaiDefaultModel') as string);
 
             if (!defaultModel || defaultModel.trim() === '') {
                 throw new Error('OpenAI model not configured - please select a model in settings');
             }
 
-            const response = await this.openAIChat(prompt, true, streamingCallback);
+            const response = await this.openAIChat(prompt, defaultModel, true, streamingCallback);
             const latency = Date.now() - startTime;
 
             const inputTokens = this.calculateTokens(prompt);
@@ -143,10 +143,10 @@ export class OpenAIClient extends BaseAIClient {
      * Chat with OpenAI
      * Discuter avec OpenAI
      */
-    private async openAIChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
+    private async openAIChat(prompt: string, model?: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
         const systemPrompt = loadSystemPrompt();
         const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const defaultModel = config.get('openaiDefaultModel') as string;
+        const defaultModel = model || (config.get('openaiDefaultModel') as string);
 
         if (!defaultModel || defaultModel.trim() === '') {
             // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle

@@ -30,32 +30,34 @@ export abstract class BaseAIClient implements AIClient {
      * Execute AI request
      * Exécuter une requête IA
      */
-    abstract execute(prompt: string): Promise<AIResponse>;
+    abstract execute(prompt: string, model?: string): Promise<AIResponse>;
 
     /**
      * Execute AI request with streaming
      * Exécuter une requête IA avec streaming
      */
-    async executeWithStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<AIResponse> {
+    async executeWithStreaming(prompt: string, model?: string, streamingCallback?: StreamingCallback): Promise<AIResponse> {
         // Default implementation: use normal execution and simulate streaming
         // Implémentation par défaut : utiliser l'exécution normale et simuler le streaming
-        const response = await this.execute(prompt);
+        const response = await this.execute(prompt, model);
 
         // Simulate streaming by sending the response in chunks
         // Simuler le streaming en envoyant la réponse par morceaux
-        const words = response.content.split(/\s+/);
-        let currentContent = '';
+        if (streamingCallback) {
+            const words = response.content.split(/\s+/);
+            let currentContent = '';
 
-        for (const word of words) {
-            currentContent += word + ' ';
-            streamingCallback.onChunk(currentContent.trim());
+            for (const word of words) {
+                currentContent += word + ' ';
+                streamingCallback.onChunk(currentContent.trim());
 
-            // Small delay to simulate streaming
-            // Petit délai pour simuler le streaming
-            await new Promise(resolve => setTimeout(resolve, 20));
+                // Small delay to simulate streaming
+                // Petit délai pour simuler le streaming
+                await new Promise(resolve => setTimeout(resolve, 20));
+            }
+
+            await streamingCallback.onComplete(response);
         }
-
-        await streamingCallback.onComplete(response);
         return response;
     }
 

@@ -105,9 +105,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                             prompt: data.prompt?.substring(0, 50) + '...',
                             routingMode: data.routingMode,
                             provider: data.provider,
+                            model: data.model,
                             conversationContextLength: data.conversationContext?.length || 0
                         });
-                        await this.handleExecutePrompt(data.prompt, data.routingMode, data.provider, data.conversationContext);
+                        await this.handleExecutePrompt(data.prompt, data.routingMode, data.provider, data.model, data.conversationContext);
                         break;
                     case 'getSettings':
                         await this.handleGetSettings();
@@ -171,12 +172,14 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         prompt: string,
         routingMode: AIRoutingMode,
         provider?: AIProvider | 'auto',
+        model?: string,
         conversationContext?: any[]
     ) {
         console.log('🔍 [COMMAND-BAR-DEBUG] handleExecutePrompt called');
         console.log('📝 [COMMAND-BAR-DEBUG] Prompt:', prompt.substring(0, 100) + '...');
         console.log('🎯 [COMMAND-BAR-DEBUG] Routing mode:', routingMode);
         console.log('🤖 [COMMAND-BAR-DEBUG] Provider:', provider);
+        console.log('🧠 [COMMAND-BAR-DEBUG] Model:', model);
         console.log('💬 [COMMAND-BAR-DEBUG] Conversation context length:', conversationContext?.length || 0);
 
         if (!this._view) {
@@ -250,7 +253,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
 
             console.log('🔄 [COMMAND-BAR-DEBUG] Calling AI Router with streaming...');
             // Execute with real streaming and conversation context
-            await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, streamingCallback, conversationContext);
+            await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, model, streamingCallback, conversationContext);
             console.log('✅ [COMMAND-BAR-DEBUG] AI Router execution completed');
 
         } catch (error) {
