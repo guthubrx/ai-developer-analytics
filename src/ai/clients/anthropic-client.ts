@@ -10,7 +10,6 @@ import * as https from 'https';
 import { BaseAIClient } from './base-client';
 import { AIProvider, AIResponse, StreamingCallback } from '../types';
 import { loadSystemPrompt } from '../system-prompt-loader';
-import { ProviderError, ProviderStatus, ProviderStatusManager } from '../providers/provider-status';
 import { getChatUrl, getProviderConfig } from '../provider-config';
 
 /**
@@ -20,11 +19,9 @@ import { getChatUrl, getProviderConfig } from '../provider-config';
 export class AnthropicClient extends BaseAIClient {
     private apiKey: string = '';
     private timeout: number = 60000; // Default 60 seconds
-    private statusManager: ProviderStatusManager;
 
     constructor(context: vscode.ExtensionContext) {
         super(context);
-        this.statusManager = ProviderStatusManager.getInstance();
     }
 
     /**
@@ -42,55 +39,16 @@ export class AnthropicClient extends BaseAIClient {
         // Vérifier également SecretStorage pour la compatibilité descendante
         if (configApiKey && configApiKey.trim() !== '') {
             this.apiKey = configApiKey;
-            // Vérifier la connexion au démarrage
-            await this.checkConnection();
         } else {
             const secretApiKey = await this.getApiKey('anthropic-api-key');
             if (secretApiKey && secretApiKey.trim() !== '') {
                 this.apiKey = secretApiKey;
-                await this.checkConnection();
-            } else {
-                // Aucune clé configurée
-                this.statusManager.updateStatus({
-                    providerId: 'anthropic',
-                    providerName: 'Anthropic',
-                    status: ProviderStatus.UNCONFIGURED,
-                    lastChecked: new Date(),
-                    suggestions: [
-                        'Configurez votre clé API Anthropic dans les paramètres',
-                        'Obtenez une clé sur https://console.anthropic.com'
-                    ]
-                });
             }
         }
 
         this.isInitialized = true;
     }
 
-    /**
-     * Vérifier la connexion à l'API Anthropic
-     */
-    private async checkConnection(): Promise<void> {
-        try {
-            const testPrompt = 'Test de connexion';
-            const startTime = Date.now();
-
-            // Faire une petite requête de test
-            await this.anthropicChat(testPrompt, false);
-            const latency = Date.now() - startTime;
-
-            this.statusManager.updateStatus({
-                providerId: 'anthropic',
-                providerName: 'Anthropic',
-                status: ProviderStatus.CONNECTED,
-                lastChecked: new Date(),
-                lastLatency: latency
-            });
-
-        } catch (error) {
-            // La gestion d'erreur se fait dans les méthodes de requête
-        }
-    }
 
     /**
      * Execute prompt using Anthropic
@@ -138,9 +96,6 @@ export class AnthropicClient extends BaseAIClient {
             };
         } catch (error) {
             console.error(`[Anthropic] Execution failed: ${error}`);
-            if (error instanceof ProviderError) {
-                throw error;
-            }
             throw new Error(`Anthropic execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -187,9 +142,6 @@ export class AnthropicClient extends BaseAIClient {
             };
         } catch (error) {
             console.error(`[Anthropic] Streaming execution failed: ${error}`);
-            if (error instanceof ProviderError) {
-                throw error;
-            }
             throw new Error(`Anthropic streaming execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -337,13 +289,7 @@ export class AnthropicClient extends BaseAIClient {
             // Set up timeout
             const timeoutId = setTimeout(() => {
                 req.destroy();
-                const error = ProviderError.fromNetworkError(
-                    'anthropic',
-                    'Anthropic',
-                    new Error(`Request timeout after ${this.timeout}ms - Anthropic API did not respond`)
-                );
-                this.handleApiError(error);
-                reject(error);
+                reject(new Error(`Request timeout after ${this.timeout}ms - Anthropic API did not respond`));
             }, this.timeout);
 
             const req = https.request(options, (res) => {
@@ -360,37 +306,17 @@ export class AnthropicClient extends BaseAIClient {
                             const parsedData = JSON.parse(data);
                             resolve(parsedData);
                         } catch (parseError) {
-                            const error = new ProviderError(
-                                'anthropic',
-                                'Anthropic',
-                                ProviderStatus.API_ERROR,
-                                `Failed to parse API response: ${parseError}`
-                            );
-                            this.handleApiError(error);
-                            reject(error);
+                            reject(new Error(`Failed to parse API response: ${parseError}`));
                         }
                     } else {
-                        const error = ProviderError.fromHttpError(
-                            'anthropic',
-                            'Anthropic',
-                            res.statusCode || 0,
-                            data
-                        );
-                        this.handleApiError(error);
-                        reject(error);
+                        reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
                     }
                 });
             });
 
             req.on('error', (error: any) => {
                 clearTimeout(timeoutId);
-                const providerError = ProviderError.fromNetworkError(
-                    'anthropic',
-                    'Anthropic',
-                    error
-                );
-                this.handleApiError(providerError);
-                reject(providerError);
+                reject(new Error(`Network error: ${error.message}`));
             });
 
             req.on('timeout', () => {
@@ -498,27 +424,14 @@ export class AnthropicClient extends BaseAIClient {
                             usage
                         });
                     } else {
-                        const error = ProviderError.fromHttpError(
-                            'anthropic',
-                            'Anthropic',
-                            res.statusCode || 0,
-                            'Streaming request failed'
-                        );
-                        this.handleApiError(error);
-                        reject(error);
+                        reject(new Error(`Streaming API request failed with status ${res.statusCode}`));
                     }
                 });
             });
 
             req.on('error', (error: any) => {
                 clearTimeout(timeoutId);
-                const providerError = ProviderError.fromNetworkError(
-                    'anthropic',
-                    'Anthropic',
-                    error
-                );
-                this.handleApiError(providerError);
-                reject(providerError);
+                reject(new Error(`Network error: ${error.message}`));
             });
 
             req.on('timeout', () => {
@@ -558,22 +471,4 @@ export class AnthropicClient extends BaseAIClient {
         };
     }
 
-    /**
-     * Gérer les erreurs d'API et afficher les messages utilisateur
-     */
-    private async handleApiError(error: ProviderError): Promise<void> {
-        // Mettre à jour le statut
-        this.statusManager.updateStatus({
-            providerId: error.providerId,
-            providerName: error.providerName,
-            status: error.status,
-            errorMessage: error.message,
-            errorCode: error.errorCode,
-            lastChecked: new Date(),
-            suggestions: error.suggestions
-        });
-
-        // Afficher l'erreur à l'utilisateur
-        await error.showToUser();
-    }
 }

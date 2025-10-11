@@ -8,17 +8,13 @@ import * as https from 'https';
 import { BaseAIClient } from './base-client';
 import { AIProvider, AIResponse, StreamingCallback } from '../types';
 import { loadSystemPrompt } from '../system-prompt-loader';
-import { ProviderError, ProviderStatus, ProviderStatusManager } from '../providers/provider-status';
 import { getChatUrl, getProviderConfig } from '../provider-config';
 
 export class MoonshotClient extends BaseAIClient {
     private apiKey: string = '';
     private timeout: number = 60000; // Default 60 seconds
-    private statusManager: ProviderStatusManager;
-
     constructor(context: vscode.ExtensionContext) {
         super(context);
-        this.statusManager = ProviderStatusManager.getInstance();
     }
 
     async initialize(): Promise<void> {
@@ -31,54 +27,15 @@ export class MoonshotClient extends BaseAIClient {
         if (configApiKey && configApiKey.trim() !== '') {
             this.apiKey = configApiKey;
 
-            // Vérifier la connexion au démarrage
-            await this.checkConnection();
         } else {
             const secretApiKey = await this.getApiKey('moonshot-api-key');
             if (secretApiKey && secretApiKey.trim() !== '') {
                 this.apiKey = secretApiKey;
-                await this.checkConnection();
-            } else {
-                // Aucune clé configurée
-                this.statusManager.updateStatus({
-                    providerId: 'moonshot',
-                    providerName: 'Moonshot',
-                    status: ProviderStatus.UNCONFIGURED,
-                    lastChecked: new Date(),
-                    suggestions: [
-                        'Configurez votre clé API Moonshot dans les paramètres',
-                        'Obtenez une clé sur https://platform.moonshot.cn'
-                    ]
-                });
             }
         }
         this.isInitialized = true;
     }
 
-    /**
-     * Vérifier la connexion à l'API Moonshot
-     */
-    private async checkConnection(): Promise<void> {
-        try {
-            const testPrompt = 'Test de connexion';
-            const startTime = Date.now();
-
-            // Faire une petite requête de test
-            await this.kimiChat(testPrompt, false);
-            const latency = Date.now() - startTime;
-
-            this.statusManager.updateStatus({
-                providerId: 'moonshot',
-                providerName: 'Moonshot',
-                status: ProviderStatus.CONNECTED,
-                lastChecked: new Date(),
-                lastLatency: latency
-            });
-
-        } catch (error) {
-            // La gestion d'erreur se fait dans les méthodes de requête
-        }
-    }
 
     async execute(prompt: string): Promise<AIResponse> {
         if (!this.isInitialized) await this.initialize();
@@ -208,12 +165,7 @@ export class MoonshotClient extends BaseAIClient {
 
             const timeoutId = setTimeout(() => {
                 req.destroy();
-                const error = ProviderError.fromNetworkError(
-                    'moonshot',
-                    'Moonshot',
-                    new Error('Request timeout after 30 seconds')
-                );
-                this.handleApiError(error);
+                const error = new Error('Moonshot API request timeout');
                 reject(error);
             }, this.timeout);
 
@@ -227,23 +179,11 @@ export class MoonshotClient extends BaseAIClient {
                             const response = JSON.parse(data);
                             resolve(response);
                         } catch (e) {
-                            const error = new ProviderError(
-                                'moonshot',
-                                'Moonshot',
-                                ProviderStatus.API_ERROR,
-                                `Failed to parse API response: ${e}`
-                            );
-                            this.handleApiError(error);
+                            const error = new Error(`Failed to parse Moonshot API response: ${e}`);
                             reject(error);
                         }
                     } else {
-                        const error = ProviderError.fromHttpError(
-                            'moonshot',
-                            'Moonshot',
-                            res.statusCode || 0,
-                            data
-                        );
-                        this.handleApiError(error);
+                        const error = new Error(`Moonshot API error ${res.statusCode}: ${data}`);
                         reject(error);
                     }
                 });
@@ -251,13 +191,7 @@ export class MoonshotClient extends BaseAIClient {
 
             req.on('error', err => {
                 clearTimeout(timeoutId);
-                const error = ProviderError.fromNetworkError(
-                    'moonshot',
-                    'Moonshot',
-                    err
-                );
-                this.handleApiError(error);
-                reject(error);
+                reject(err);
             });
 
             req.write(postData);
@@ -265,24 +199,6 @@ export class MoonshotClient extends BaseAIClient {
         });
     }
 
-    /**
-     * Gérer les erreurs d'API et afficher les messages utilisateur
-     */
-    private async handleApiError(error: ProviderError): Promise<void> {
-        // Mettre à jour le statut
-        this.statusManager.updateStatus({
-            providerId: error.providerId,
-            providerName: error.providerName,
-            status: error.status,
-            errorMessage: error.message,
-            errorCode: error.errorCode,
-            lastChecked: new Date(),
-            suggestions: error.suggestions
-        });
-
-        // Afficher l'erreur à l'utilisateur
-        await error.showToUser();
-    }
 
     private async makeStreamingApiRequest(url: string, body: any, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
         return new Promise((resolve, reject) => {
@@ -309,12 +225,7 @@ export class MoonshotClient extends BaseAIClient {
 
             const timeoutId = setTimeout(() => {
                 req.destroy();
-                const error = ProviderError.fromNetworkError(
-                    'moonshot',
-                    'Moonshot',
-                    new Error('Streaming request timeout after 30 seconds')
-                );
-                this.handleApiError(error);
+                const error = new Error('Moonshot streaming request timeout');
                 reject(error);
             }, this.timeout);
 
@@ -355,13 +266,7 @@ export class MoonshotClient extends BaseAIClient {
                     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         resolve({ content: fullContent, usage });
                     } else {
-                        const error = ProviderError.fromHttpError(
-                            'moonshot',
-                            'Moonshot',
-                            res.statusCode || 0,
-                            'Streaming request failed'
-                        );
-                        this.handleApiError(error);
+                        const error = new Error(`Moonshot streaming API error ${res.statusCode}`);
                         reject(error);
                     }
                 });
@@ -369,13 +274,7 @@ export class MoonshotClient extends BaseAIClient {
 
             req.on('error', err => {
                 clearTimeout(timeoutId);
-                const error = ProviderError.fromNetworkError(
-                    'moonshot',
-                    'Moonshot',
-                    err
-                );
-                this.handleApiError(error);
-                reject(error);
+                reject(err);
             });
 
             req.write(postData);

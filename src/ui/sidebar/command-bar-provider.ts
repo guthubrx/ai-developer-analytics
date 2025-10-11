@@ -12,7 +12,6 @@ import { AICoach } from '../../coaching/coach';
 import { SessionManager } from '../../sessions/manager';
 import { AIRoutingMode, AIProvider, StreamingCallback } from '../../ai/types';
 import { ModelChecker } from '../../ai/model-checker';
-import { ProviderStatusManager, ProviderStatusInfo } from '../../ai/providers/provider-status';
 import { ProviderManager } from '../../ai/providers/provider-manager';
 
 /**
@@ -29,7 +28,6 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private readonly sessionManager: SessionManager;
     private readonly context: vscode.ExtensionContext;
     private readonly modelChecker: ModelChecker;
-    private readonly providerStatusManager: ProviderStatusManager;
     private readonly providerManager: ProviderManager;
 
     constructor(
@@ -46,7 +44,6 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         this.sessionManager = sessionManager;
         this.context = context;
         this.modelChecker = new ModelChecker();
-        this.providerStatusManager = ProviderStatusManager.getInstance();
         this.providerManager = new ProviderManager(context);
 
         // Initialize provider manager
@@ -152,15 +149,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         console.log('📥 [COMMAND-BAR] Received getModels request for provider:', data.provider);
                         await this.handleGetModels(data.provider);
                         break;
-                    case 'getProvidersStatus':
-                        await this.handleGetProvidersStatus();
-                        break;
                     case 'webviewReady':
                         console.log('WebView is ready and loaded');
                         // Send initial settings when webview is ready
                         await this.handleGetSettings();
-                        // Register webview callback for provider status updates
-                        this.registerProviderStatusCallback();
                         break;
                 }
             }
@@ -303,7 +295,6 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             showMetrics: config.get('showMetrics'),
             coachEnabled: config.get('coachEnabled'),
             coachCollapsedByDefault: config.get('coachCollapsedByDefault'),
-            providerStatusCollapsedByDefault: config.get('providerStatusCollapsedByDefault', false),
             sessionTabsEnabled: config.get('sessionTabsEnabled'),
             autoExpandTextarea: config.get('autoExpandTextarea'),
             streamingEnabled: config.get('streamingEnabled'),
@@ -682,54 +673,13 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         }
     }
 
-    /**
-     * Handle get providers status
-     * Gérer l'obtention du statut des providers
-     */
-    private async handleGetProvidersStatus(): Promise<void> {
-        if (!this._view) {
-            return;
-        }
-
-        try {
-            const providers = await this.providerManager.getAllProviders();
-            console.log(`🔍 [COMMAND-BAR] Sending ${providers.length} providers to webview`);
-
-            this._view.webview.postMessage({
-                type: 'providersStatus',
-                providers: providers
-            });
-        } catch (error) {
-            console.error('❌ [COMMAND-BAR] Error getting providers:', error);
-            this._view.webview.postMessage({
-                type: 'providersError',
-                error: 'Failed to load providers'
-            });
-        }
-    }
-
-    /**
-     * Register callback for provider status updates
-     * Enregistrer le callback pour les mises à jour de statut des providers
-     */
-    private registerProviderStatusCallback(): void {
-        this.providerStatusManager.setWebviewCallback((providers: ProviderStatusInfo[]) => {
-            if (this._view) {
-                this._view.webview.postMessage({
-                    type: 'providersStatus',
-                    providers
-                });
-            }
-        });
-    }
 
     /**
      * Dispose the provider
      * Libérer le fournisseur
      */
     public dispose(): void {
-        // Clean up provider status callback
-        this.providerStatusManager.clearWebviewCallback();
+        // Clean up resources if needed
     }
 }
 

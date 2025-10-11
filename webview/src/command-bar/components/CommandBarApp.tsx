@@ -4,7 +4,6 @@ import { ConversationArea } from './ConversationArea';
 import { InputPanel } from './InputPanel';
 import { CoachingSection } from './CoachingSection';
 import { MetricsDisplay } from './MetricsDisplay';
-import { ProviderStatus } from './ProviderStatus';
 import { useVSCodeAPI } from '../hooks/useVSCodeAPI';
 import { useSettings } from '../hooks/useSettings';
 import { useSessions } from '../hooks/useSessions';
@@ -120,9 +119,6 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
         setMetrics(message.metrics);
         break;
 
-      case 'providersStatus':
-        setProviders(message.providers);
-        break;
     }
   }, [updateSettings, currentSession, addMessage, updateMessage, currentAIMessageId, sessions]);
 
@@ -132,7 +128,6 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
     // Request initial settings and metrics
     vscode.postMessage({ type: 'getSettings' });
     vscode.postMessage({ type: 'loadMetrics' });
-    vscode.postMessage({ type: 'getProvidersStatus' });
 
     return () => {
       window.removeEventListener('message', handleMessage);
@@ -197,12 +192,6 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
           <MetricsDisplay metrics={metrics} />
         )}
 
-        {providers.length > 0 && (
-          <ProviderStatus
-            providers={providers}
-            isCollapsed={settings.providerStatusCollapsedByDefault}
-          />
-        )}
       </div>
     </div>
   );
