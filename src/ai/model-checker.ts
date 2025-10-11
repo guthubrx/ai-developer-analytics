@@ -72,10 +72,7 @@ export class ModelChecker {
      */
     private async fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('openai');
-        const config = getProviderConfig('openai');        console.log('Headers:', {
-            'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
-            'Content-Type': 'application/json'
-        });
+        const config = getProviderConfig('openai');
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -202,11 +199,7 @@ export class ModelChecker {
      */
     private async fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('anthropic');
-        const config = getProviderConfig('anthropic');        console.log('Headers:', {
-            'x-api-key': `${apiKey.substring(0, 10)}...`,
-            'anthropic-version': '2023-06-01',
-            'Content-Type': 'application/json'
-        });
+        const config = getProviderConfig('anthropic');
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -337,10 +330,7 @@ export class ModelChecker {
      */
     private async fetchDeepSeekModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('deepseek');
-        const config = getProviderConfig('deepseek');        console.log('Headers:', {
-            'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
-            'Content-Type': 'application/json'
-        });
+        const config = getProviderConfig('deepseek');
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -467,10 +457,7 @@ export class ModelChecker {
      */
     private async fetchMoonshotModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('moonshot');
-        const config = getProviderConfig('moonshot');        console.log('Headers:', {
-            'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
-            'Content-Type': 'application/json'
-        });
+        const config = getProviderConfig('moonshot');
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
