@@ -8,22 +8,76 @@ import * as https from 'https';
 import { BaseAIClient } from './base-client';
 import { AIProvider, AIResponse, StreamingCallback } from '../types';
 import { loadSystemPrompt } from '../system-prompt-loader';
+import { ProviderError, ProviderStatus, ProviderStatusManager } from '../providers/provider-status';
+import { getChatUrl, getProviderConfig } from '../provider-config';
 
 export class MoonshotClient extends BaseAIClient {
     private apiKey: string = '';
+    private timeout: number = 60000; // Default 60 seconds
+    private statusManager: ProviderStatusManager;
+
+    constructor(context: vscode.ExtensionContext) {
+        super(context);
+        this.statusManager = ProviderStatusManager.getInstance();
+    }
 
     async initialize(): Promise<void> {
+        // Read API key and timeout from extension configuration
+        // Lire la clé API et le timeout depuis la configuration de l'extension
         const config = vscode.workspace.getConfiguration('aiAnalytics');
         const configApiKey = config.get('moonshotApiKey') as string;
+        this.timeout = config.get('apiTimeout') as number || 60000;
+
         if (configApiKey && configApiKey.trim() !== '') {
             this.apiKey = configApiKey;
+
+            // Vérifier la connexion au démarrage
+            await this.checkConnection();
         } else {
             const secretApiKey = await this.getApiKey('moonshot-api-key');
             if (secretApiKey && secretApiKey.trim() !== '') {
                 this.apiKey = secretApiKey;
+                await this.checkConnection();
+            } else {
+                // Aucune clé configurée
+                this.statusManager.updateStatus({
+                    providerId: 'moonshot',
+                    providerName: 'Moonshot',
+                    status: ProviderStatus.UNCONFIGURED,
+                    lastChecked: new Date(),
+                    suggestions: [
+                        'Configurez votre clé API Moonshot dans les paramètres',
+                        'Obtenez une clé sur https://platform.moonshot.cn'
+                    ]
+                });
             }
         }
         this.isInitialized = true;
+    }
+
+    /**
+     * Vérifier la connexion à l'API Moonshot
+     */
+    private async checkConnection(): Promise<void> {
+        try {
+            const testPrompt = 'Test de connexion';
+            const startTime = Date.now();
+
+            // Faire une petite requête de test
+            await this.kimiChat(testPrompt, false);
+            const latency = Date.now() - startTime;
+
+            this.statusManager.updateStatus({
+                providerId: 'moonshot',
+                providerName: 'Moonshot',
+                status: ProviderStatus.CONNECTED,
+                lastChecked: new Date(),
+                lastLatency: latency
+            });
+
+        } catch (error) {
+            // La gestion d'erreur se fait dans les méthodes de requête
+        }
     }
 
     async execute(prompt: string): Promise<AIResponse> {
@@ -38,6 +92,10 @@ export class MoonshotClient extends BaseAIClient {
         const outputTokens = apiResponse.usage?.completion_tokens || this.calculateTokens(apiResponse.content);
         const totalTokens = apiResponse.usage?.total_tokens || inputTokens + outputTokens;
 
+        // Get configured model for response
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+        const configuredModel = config.get('moonshotDefaultModel') as string;
+
         return {
             content: apiResponse.content,
             provider: 'moonshot',
@@ -45,7 +103,7 @@ export class MoonshotClient extends BaseAIClient {
             cost: this.calculateCost(inputTokens, outputTokens),
             latency,
             cacheHit: false,
-            model: apiResponse.model || 'moonshot-v1-8k' // Use model from API response
+            model: apiResponse.model || configuredModel // Use model from API response or configured model
         };
     }
 
@@ -61,6 +119,10 @@ export class MoonshotClient extends BaseAIClient {
         const outputTokens = apiResponse.usage?.completion_tokens || this.calculateTokens(apiResponse.content);
         const totalTokens = apiResponse.usage?.total_tokens || inputTokens + outputTokens;
 
+        // Get configured model for response
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+        const configuredModel = config.get('moonshotDefaultModel') as string;
+
         return {
             content: apiResponse.content,
             provider: 'moonshot',
@@ -68,7 +130,7 @@ export class MoonshotClient extends BaseAIClient {
             cost: this.calculateCost(inputTokens, outputTokens),
             latency,
             cacheHit: false,
-            model: 'moonshot-v1-8k'
+            model: apiResponse.model || configuredModel
         };
     }
 
@@ -90,17 +152,27 @@ export class MoonshotClient extends BaseAIClient {
     private async kimiChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any; model?: string }> {
         // Endpoint and payload based on Moonshot docs
         // https://platform.moonshot.ai/docs/guide/start-using-kimi-api
-        const apiUrl = 'https://api.moonshot.cn/v1/chat/completions';
+        const apiUrl = getChatUrl('moonshot');
         const systemPrompt = loadSystemPrompt();
-        const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const defaultModel = (config.get('moonshotDefaultModel') as string) || 'moonshot-v1-8k';
+        const vscodeConfig = vscode.workspace.getConfiguration('aiAnalytics');
+        const defaultModel = vscodeConfig.get('moonshotDefaultModel') as string;
+
+        if (!defaultModel || defaultModel.trim() === '') {
+            // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
+            if (this.apiKey && this.apiKey.trim() !== '') {
+                throw new Error('Moonshot model not configured - please select a model in settings');
+            }
+            // Si aucune clé API n'est configurée, le provider n'est pas disponible
+            throw new Error('Moonshot API key not configured');
+        }
         const requestBody = {
             model: defaultModel,
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: prompt }
             ],
-            stream
+            stream,
+            temperature: 0.6
         };
 
         if (stream && streamingCallback) {
@@ -115,6 +187,12 @@ export class MoonshotClient extends BaseAIClient {
         return new Promise((resolve, reject) => {
             const postData = JSON.stringify(body);
             const urlObj = new URL(url);
+            const config = getProviderConfig('moonshot');
+            // Vérifier que les headers existent
+            if (!config.headers) {
+                throw new Error('Provider configuration missing headers');
+            }
+
             const options = {
                 hostname: urlObj.hostname,
                 port: 443,
@@ -122,31 +200,100 @@ export class MoonshotClient extends BaseAIClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    [config.headers.authHeader]: `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
-                }
+                },
+                timeout: this.timeout
             };
+
+            const timeoutId = setTimeout(() => {
+                req.destroy();
+                const error = ProviderError.fromNetworkError(
+                    'moonshot',
+                    'Moonshot',
+                    new Error('Request timeout after 30 seconds')
+                );
+                this.handleApiError(error);
+                reject(error);
+            }, this.timeout);
+
             const req = https.request(options, (res) => {
                 let data = '';
                 res.on('data', chunk => data += chunk);
                 res.on('end', () => {
+                    clearTimeout(timeoutId);
                     if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-                        try { resolve(JSON.parse(data)); } catch (e) { reject(e); }
+                        try {
+                            const response = JSON.parse(data);
+                            resolve(response);
+                        } catch (e) {
+                            const error = new ProviderError(
+                                'moonshot',
+                                'Moonshot',
+                                ProviderStatus.API_ERROR,
+                                `Failed to parse API response: ${e}`
+                            );
+                            this.handleApiError(error);
+                            reject(error);
+                        }
                     } else {
-                        reject(new Error(`API error ${res.statusCode}: ${data}`));
+                        const error = ProviderError.fromHttpError(
+                            'moonshot',
+                            'Moonshot',
+                            res.statusCode || 0,
+                            data
+                        );
+                        this.handleApiError(error);
+                        reject(error);
                     }
                 });
             });
-            req.on('error', err => reject(err));
+
+            req.on('error', err => {
+                clearTimeout(timeoutId);
+                const error = ProviderError.fromNetworkError(
+                    'moonshot',
+                    'Moonshot',
+                    err
+                );
+                this.handleApiError(error);
+                reject(error);
+            });
+
             req.write(postData);
             req.end();
         });
+    }
+
+    /**
+     * Gérer les erreurs d'API et afficher les messages utilisateur
+     */
+    private async handleApiError(error: ProviderError): Promise<void> {
+        // Mettre à jour le statut
+        this.statusManager.updateStatus({
+            providerId: error.providerId,
+            providerName: error.providerName,
+            status: error.status,
+            errorMessage: error.message,
+            errorCode: error.errorCode,
+            lastChecked: new Date(),
+            suggestions: error.suggestions
+        });
+
+        // Afficher l'erreur à l'utilisateur
+        await error.showToUser();
     }
 
     private async makeStreamingApiRequest(url: string, body: any, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
         return new Promise((resolve, reject) => {
             const postData = JSON.stringify(body);
             const urlObj = new URL(url);
+            const config = getProviderConfig('moonshot');
+            // Vérifier que les headers existent
+            if (!config.headers) {
+                throw new Error('Provider configuration missing headers');
+            }
+
             const options = {
                 hostname: urlObj.hostname,
                 port: 443,
@@ -154,10 +301,22 @@ export class MoonshotClient extends BaseAIClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    [config.headers.authHeader]: `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
-                }
+                },
+                timeout: this.timeout
             };
+
+            const timeoutId = setTimeout(() => {
+                req.destroy();
+                const error = ProviderError.fromNetworkError(
+                    'moonshot',
+                    'Moonshot',
+                    new Error('Streaming request timeout after 30 seconds')
+                );
+                this.handleApiError(error);
+                reject(error);
+            }, this.timeout);
 
             let fullContent = '';
             let usage: any = null;
@@ -172,6 +331,7 @@ export class MoonshotClient extends BaseAIClient {
                         if (line.startsWith('data: ')) {
                             const dataStr = line.substring(6);
                             if (dataStr === '[DONE]') {
+                                clearTimeout(timeoutId);
                                 resolve({ content: fullContent, usage });
                                 return;
                             }
@@ -180,7 +340,8 @@ export class MoonshotClient extends BaseAIClient {
                                 const delta = data.choices?.[0]?.delta;
                                 if (delta?.content) {
                                     fullContent += delta.content;
-                                    streamingCallback.onChunk(fullContent);
+                                    // Send only the delta content, not the accumulated content
+                                    streamingCallback.onChunk(delta.content);
                                 }
                                 if (data.usage) usage = data.usage;
                             } catch (e) {
@@ -189,9 +350,34 @@ export class MoonshotClient extends BaseAIClient {
                         }
                     }
                 });
-                res.on('end', () => resolve({ content: fullContent, usage }));
+                res.on('end', () => {
+                    clearTimeout(timeoutId);
+                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                        resolve({ content: fullContent, usage });
+                    } else {
+                        const error = ProviderError.fromHttpError(
+                            'moonshot',
+                            'Moonshot',
+                            res.statusCode || 0,
+                            'Streaming request failed'
+                        );
+                        this.handleApiError(error);
+                        reject(error);
+                    }
+                });
             });
-            req.on('error', err => reject(err));
+
+            req.on('error', err => {
+                clearTimeout(timeoutId);
+                const error = ProviderError.fromNetworkError(
+                    'moonshot',
+                    'Moonshot',
+                    err
+                );
+                this.handleApiError(error);
+                reject(error);
+            });
+
             req.write(postData);
             req.end();
         });

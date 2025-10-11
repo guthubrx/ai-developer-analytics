@@ -44,6 +44,13 @@ export class OpenAIClient extends BaseAIClient {
         try {
             // In a real implementation, this would use the OpenAI SDK
             // Dans une implémentation réelle, cela utiliserait le SDK OpenAI
+            const config = vscode.workspace.getConfiguration('aiAnalytics');
+            const defaultModel = config.get('openaiDefaultModel') as string;
+
+            if (!defaultModel || defaultModel.trim() === '') {
+                throw new Error('OpenAI model not configured - please select a model in settings');
+            }
+
             const response = await this.openAIChat(prompt, false);
             const latency = Date.now() - startTime;
 
@@ -57,7 +64,7 @@ export class OpenAIClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: 'gpt-4o'
+                model: defaultModel
             };
         } catch (error) {
             throw new Error(`OpenAI execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -80,6 +87,13 @@ export class OpenAIClient extends BaseAIClient {
         const startTime = Date.now();
 
         try {
+            const config = vscode.workspace.getConfiguration('aiAnalytics');
+            const defaultModel = config.get('openaiDefaultModel') as string;
+
+            if (!defaultModel || defaultModel.trim() === '') {
+                throw new Error('OpenAI model not configured - please select a model in settings');
+            }
+
             const response = await this.openAIChat(prompt, true, streamingCallback);
             const latency = Date.now() - startTime;
 
@@ -93,7 +107,7 @@ export class OpenAIClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: 'gpt-4o'
+                model: defaultModel
             };
         } catch (error) {
             throw new Error(`OpenAI streaming execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -132,7 +146,16 @@ export class OpenAIClient extends BaseAIClient {
     private async openAIChat(prompt: string, stream = false, streamingCallback?: StreamingCallback): Promise<{ content: string; usage?: any }> {
         const systemPrompt = loadSystemPrompt();
         const config = vscode.workspace.getConfiguration('aiAnalytics');
-        const defaultModel = (config.get('openaiDefaultModel') as string) || 'gpt-4o';
+        const defaultModel = config.get('openaiDefaultModel') as string;
+
+        if (!defaultModel || defaultModel.trim() === '') {
+            // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
+            if (this.apiKey && this.apiKey.trim() !== '') {
+                throw new Error('OpenAI model not configured - please select a model in settings');
+            }
+            // Si aucune clé API n'est configurée, le provider n'est pas disponible
+            throw new Error('OpenAI API key not configured');
+        }
 
         // System prompt is loaded but not yet integrated in placeholder implementation
         // In real implementation, systemPrompt would be used in the API call

@@ -64,12 +64,18 @@
 .conversation-area {
   flex: 1;
   overflow: hidden;
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.15) 0%, rgba(101, 67, 33, 0.2) 50%, rgba(139, 69, 19, 0.15) 100%);
+  border-radius: 8px;
+  margin: 8px;
+  border: 1px solid rgba(139, 69, 19, 0.3);
 }
 
 .conversation-container {
   height: 100%;
   padding: 16px;
   overflow-y: auto;
+  background: rgba(139, 69, 19, 0.08);
+  border-radius: 6px;
 }
 
 .empty-state {
@@ -89,30 +95,41 @@
   gap: 16px;
 }
 
-/* Message Bubble */
-.message-bubble {
-  max-width: 80%;
-  padding: 12px 16px;
-  border-radius: 12px;
+/* Message Container */
+.message-container {
+  width: 100%;
+  padding: 12px 0;
   position: relative;
 }
 
-.message-bubble.user {
+.message-container.user {
   align-self: flex-end;
-  background-color: var(--vscode-button-background);
+  background: linear-gradient(135deg, rgba(139, 69, 19, 0.3) 0%, rgba(101, 67, 33, 0.4) 100%);
   color: var(--vscode-button-foreground);
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 80%;
+  border: 1px solid rgba(139, 69, 19, 0.5);
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
 }
 
-.message-bubble.ai {
+.message-container.ai {
   align-self: flex-start;
-  background-color: var(--vscode-panel-background);
-  border: 1px solid var(--vscode-panel-border);
+  background: linear-gradient(135deg, rgba(101, 67, 33, 0.2) 0%, rgba(139, 69, 19, 0.25) 100%);
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 80%;
+  border: 1px solid rgba(139, 69, 19, 0.3);
+  box-shadow: 0 2px 6px rgba(139, 69, 19, 0.15);
 }
 
-.message-bubble.error {
+.message-container.error {
   align-self: flex-start;
   background-color: #f44336;
   color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 80%;
 }
 
 .message-header {
@@ -121,7 +138,9 @@
   align-items: center;
   margin-bottom: 4px;
   font-size: 11px;
-  opacity: 0.8;
+  font-weight: 600;
+  color: rgba(139, 69, 19, 0.9);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .message-content {
@@ -155,6 +174,33 @@
 .code-block code {
   background: none;
   padding: 0;
+}
+
+/* Inline Code */
+.inline-code {
+  background-color: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+/* Message Content Styling */
+.message-content {
+  line-height: 1.6;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.message-content strong {
+  font-weight: bold;
+  color: var(--vscode-foreground);
+}
+
+.message-content em {
+  font-style: italic;
+  color: var(--vscode-foreground);
 }
 
 /* Coaching Section */
@@ -206,6 +252,114 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  overflow-x: hidden; /* Empêche l'overflow horizontal */
+  min-width: 0; /* Permet aux enfants flex de se réduire */
+}
+
+/* Responsive layout for narrow panels */
+@media (max-width: 500px) {
+  .config-row {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .dropdown-wrapper {
+    flex: 1;
+    min-width: 120px;
+    justify-content: space-between;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 50px;
+    font-size: 11px;
+  }
+
+  .dropdown-icon {
+    font-size: 10px;
+  }
+
+  .provider-dropdown-container {
+    flex: 1;
+    min-width: 120px;
+    justify-content: space-between;
+  }
+
+  .provider-dropdown {
+    min-width: 50px;
+    font-size: 11px;
+  }
+
+  .provider-dropdown-container .dropdown-icon {
+    left: 6px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .config-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .dropdown-wrapper {
+    justify-content: space-between;
+    min-width: auto;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 60px;
+    font-size: 11px;
+  }
+
+  .dropdown-icon {
+    font-size: 10px;
+  }
+
+  .provider-dropdown-container {
+    justify-content: space-between;
+    min-width: auto;
+  }
+
+  .provider-dropdown {
+    min-width: 60px;
+    font-size: 11px;
+  }
+
+  .provider-dropdown-container .dropdown-icon {
+    left: 6px;
+    font-size: 10px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 300px) {
+  .configuration-panel {
+    padding: 8px 12px;
+  }
+
+  .dropdown-wrapper {
+    padding: 3px 6px;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 40px;
+    font-size: 10px;
+  }
+
+  .provider-dropdown-container {
+    padding: 0;
+  }
+
+  .provider-dropdown {
+    min-width: 40px;
+    font-size: 10px;
+  }
+
+  .provider-dropdown-container .dropdown-icon {
+    left: 4px;
+    font-size: 8px;
+  }
 }
 
 .dropdown-wrapper {
@@ -215,12 +369,15 @@
   border: 1px solid var(--vscode-input-border);
   border-radius: 4px;
   padding: 4px 8px;
+  flex-shrink: 1; /* Permet la réduction sur petits écrans */
+  min-width: 0; /* Permet aux enfants de se réduire */
 }
 
 .dropdown-icon {
   margin-right: 6px;
   font-size: 12px;
   opacity: 0.7;
+  flex-shrink: 0; /* Empêche l'icône de se réduire */
 }
 
 .dropdown-wrapper select {
@@ -228,7 +385,12 @@
   border: none;
   color: var(--vscode-input-foreground);
   outline: none;
-  min-width: 100px;
+  min-width: 60px; /* Largeur minimale réduite */
+  max-width: 120px; /* Largeur maximale réduite */
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .settings-button {
@@ -326,4 +488,122 @@
 .loading-spinner {
   color: var(--vscode-descriptionForeground);
   font-size: 14px;
+}
+
+/* Provider Dropdown Container - EXACTEMENT comme dropdown-wrapper */
+.provider-dropdown-container {
+  display: flex;
+  align-items: center;
+  background-color: var(--vscode-input-background);
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.provider-dropdown-container .dropdown-icon {
+  margin-right: 6px;
+  font-size: 12px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+/* Provider dropdown doit ressembler exactement à dropdown-wrapper */
+.provider-dropdown {
+  background: none;
+  border: none;
+  color: var(--vscode-input-foreground);
+  outline: none;
+  min-width: 60px;
+  max-width: 120px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  padding: 0;
+  margin: 0;
+}
+
+/* Provider Status */
+.provider-status {
+  border-top: 1px solid var(--vscode-panel-border);
+  background-color: var(--vscode-panel-background);
+  padding: 12px 16px;
+}
+
+.provider-status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.provider-status-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.provider-count {
+  font-size: 11px;
+  opacity: 0.7;
+  color: var(--vscode-descriptionForeground);
+}
+
+.provider-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.provider-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.provider-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.provider-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.provider-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.provider-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--vscode-foreground);
+  margin-bottom: 2px;
+}
+
+.provider-status-text {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.provider-latency {
+  opacity: 0.7;
+}
+
+.provider-error {
+  font-size: 10px;
+  color: var(--vscode-errorForeground);
+  margin-top: 2px;
+  word-break: break-word;
 }

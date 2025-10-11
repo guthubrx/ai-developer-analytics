@@ -18,6 +18,12 @@ import { registerDeepSeekTestCommand } from './test/deepseek-manual-test';
 import { MCPManager } from './mcp/mcp-manager';
 import { SessionManager } from './sessions/manager';
 import { AIModelManager } from './ai/model-manager';
+import { ProviderManager } from './ai/providers/provider-manager';
+import {
+    registerProviderDiagnosticCommand,
+    registerProviderExportCommand,
+    registerProviderValidationCommand
+} from './ai/providers/diagnostic';
 
 /**
  * Extension activation function
@@ -62,6 +68,10 @@ export async function activate(context: vscode.ExtensionContext) {
         
         const aiModelManager = new AIModelManager(context);
         console.log('✓ AIModelManager created');
+
+        const providerManager = new ProviderManager(context);
+        await providerManager.initialize();
+        console.log('✓ ProviderManager created');
 
         // Register webview providers
         // Enregistrer les fournisseurs de webview
@@ -197,6 +207,14 @@ export async function activate(context: vscode.ExtensionContext) {
         console.log('🧪 [ACTIVATION] Registering test commands...');
         registerDeepSeekTestCommand(context);
         console.log('✓ Test commands registered');
+
+        // Register provider diagnostic commands
+        // Enregistrer les commandes de diagnostic des providers
+        console.log('🔍 [ACTIVATION] Registering provider diagnostic commands...');
+        registerProviderDiagnosticCommand(context);
+        registerProviderExportCommand(context);
+        registerProviderValidationCommand(context);
+        console.log('✓ Provider diagnostic commands registered');
 
         // Initialize hot reload if enabled
         // Initialiser le hot reload si activé

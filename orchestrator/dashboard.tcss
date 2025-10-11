@@ -1,0 +1,41 @@
+/* ────────────────────────────────
+   dashboard.tcss – thème sombre lisible (corrigé)
+   ──────────────────────────────── */
+
+Screen {
+    background: #0e0f11;
+    color: #e0e0e0;
+}
+
+Header, Footer {
+    background: #1a1b1e;
+    color: #d0d0d0;
+    text-style: bold;
+}
+
+#log_area {
+    background: #131416;
+    color: #dcdcdc;
+    border: solid #222;
+    padding: 1 1;
+}
+
+#prompt {
+    background: #1b1d21;
+    color: #ffffff;
+    border: solid #333;
+    margin-bottom: 1;
+}
+
+Input:focus {
+    border: solid #666;
+    color: #ffffff;
+}
+
+Footer {
+    border-top: solid #333;
+}
+
+Static {
+    color: #8f8f8f;
+}

@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useModels } from '../hooks/useModels';
-import type { Settings, VSCodeAPI } from '../types';
+import { useProviders } from '../hooks/useProviders';
+import { ProviderDropdown } from './ProviderDropdown';
+import type { Settings, VSCodeAPI, ProviderInfo } from '../types';
 
 interface ConfigurationPanelProps {
   configuration: {
@@ -25,6 +27,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 }) => {
   const isManualMode = configuration.mode === 'manual';
   const { models, loading, error } = useModels(vscode, configuration.provider);
+  const { providers, selectedProvider, selectProvider } = useProviders(vscode);
 
   return (
     <div className="configuration-panel">
@@ -43,19 +46,17 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
         {isManualMode ? (
           <>
-            <div className="dropdown-wrapper">
+            <div className="provider-dropdown-container">
               <span className="dropdown-icon">◉</span>
-              <select
-                value={configuration.provider}
-                onChange={(e) => onChange({ provider: e.target.value })}
-                style={{ fontSize: `${settings.dropdownFontSize}px` }}
-              >
-                <option value="openai">OpenAI</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="moonshot">Moonshot</option>
-                <option value="ollama">Ollama</option>
-              </select>
+              <ProviderDropdown
+                providers={providers}
+                selectedProvider={selectedProvider}
+                onProviderSelect={(provider: ProviderInfo) => {
+                  selectProvider(provider);
+                  onChange({ provider: provider.id });
+                }}
+                placeholder="Sélectionner un provider..."
+              />
             </div>
 
             <div className="dropdown-wrapper">

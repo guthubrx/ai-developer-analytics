@@ -87,7 +87,7 @@
           "text": "Bonjour ! Je suis Claude 3.5 Sonnet, votre assistant IA. Comment puis-je vous aider aujourd'hui ?"
         }
       ],
-      "model": "claude-3-5-sonnet-20241022",
+      "model": "claude-3-5-sonnet",
       "stop_reason": "end_turn",
       "stop_sequence": null,
       "usage": {
@@ -103,7 +103,7 @@
           "type": "message",
           "role": "assistant",
           "content": [],
-          "model": "claude-3-5-sonnet-20241022"
+          "model": "claude-3-5-sonnet"
         }
       },
       "chunk_2": {

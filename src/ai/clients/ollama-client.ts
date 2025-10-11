@@ -16,7 +16,7 @@ import { loadSystemPrompt } from '../system-prompt-loader';
  */
 export class OllamaClient extends BaseAIClient {
     private ollamaUrl: string = 'http://localhost:11434';
-    private defaultModel: string = 'phi-4';
+    private defaultModel: string = '';
     private availableModels: OllamaModel[] = [];
 
     /**
@@ -26,7 +26,7 @@ export class OllamaClient extends BaseAIClient {
     async initialize(): Promise<void> {
         const config = vscode.workspace.getConfiguration('aiAnalytics');
         this.ollamaUrl = config.get('ollamaUrl') || this.ollamaUrl;
-        this.defaultModel = config.get('defaultOllamaModel') || this.defaultModel;
+        this.defaultModel = config.get('defaultOllamaModel') as string;
 
         // Check if Ollama is available
         // Vérifier si Ollama est disponible
@@ -35,6 +35,12 @@ export class OllamaClient extends BaseAIClient {
         // Load available models
         // Charger les modèles disponibles
         await this.loadAvailableModels();
+
+        // Check if model is configured
+        // Vérifier si un modèle est configuré
+        if (!this.defaultModel || this.defaultModel.trim() === '') {
+            throw new Error('Ollama model not configured - please select a model in settings');
+        }
 
         this.isInitialized = true;
     }

@@ -10,6 +10,8 @@ import * as https from 'https';
 import { BaseAIClient } from './base-client';
 import { AIProvider, AIResponse, StreamingCallback } from '../types';
 import { loadSystemPrompt } from '../system-prompt-loader';
+import { ProviderError, ProviderStatus, ProviderStatusManager } from '../providers/provider-status';
+import { getChatUrl, getProviderConfig } from '../provider-config';
 
 /**
  * DeepSeek client implementation
@@ -18,6 +20,12 @@ import { loadSystemPrompt } from '../system-prompt-loader';
 export class DeepSeekClient extends BaseAIClient {
     private apiKey: string = '';
     private timeout: number = 60000; // Default 60 seconds
+    private statusManager: ProviderStatusManager;
+
+    constructor(context: vscode.ExtensionContext) {
+        super(context);
+        this.statusManager = ProviderStatusManager.getInstance();
+    }
 
     /**
      * Initialize DeepSeek client
@@ -34,14 +42,54 @@ export class DeepSeekClient extends BaseAIClient {
         // Vérifier également SecretStorage pour la compatibilité descendante
         if (configApiKey && configApiKey.trim() !== '') {
             this.apiKey = configApiKey;
+            // Vérifier la connexion au démarrage
+            await this.checkConnection();
         } else {
             const secretApiKey = await this.getApiKey('deepseek-api-key');
             if (secretApiKey && secretApiKey.trim() !== '') {
                 this.apiKey = secretApiKey;
+                await this.checkConnection();
+            } else {
+                // Aucune clé configurée
+                this.statusManager.updateStatus({
+                    providerId: 'deepseek',
+                    providerName: 'DeepSeek',
+                    status: ProviderStatus.UNCONFIGURED,
+                    lastChecked: new Date(),
+                    suggestions: [
+                        'Configurez votre clé API DeepSeek dans les paramètres',
+                        'Obtenez une clé sur https://platform.deepseek.com'
+                    ]
+                });
             }
         }
 
         this.isInitialized = true;
+    }
+
+    /**
+     * Vérifier la connexion à l'API DeepSeek
+     */
+    private async checkConnection(): Promise<void> {
+        try {
+            const testPrompt = 'Test de connexion';
+            const startTime = Date.now();
+
+            // Faire une petite requête de test
+            await this.deepseekChat(testPrompt);
+            const latency = Date.now() - startTime;
+
+            this.statusManager.updateStatus({
+                providerId: 'deepseek',
+                providerName: 'DeepSeek',
+                status: ProviderStatus.CONNECTED,
+                lastChecked: new Date(),
+                lastLatency: latency
+            });
+
+        } catch (error) {
+            // La gestion d'erreur se fait dans les méthodes de requête
+        }
     }
 
     /**
@@ -65,6 +113,9 @@ export class DeepSeekClient extends BaseAIClient {
         try {
             // Use real DeepSeek API
             // Utiliser l'API DeepSeek réelle
+            const config = vscode.workspace.getConfiguration('aiAnalytics');
+            const configuredModel = config.get('deepseekModel') as string;
+
             const apiResponse = await this.deepseekChat(prompt);
             const latency = Date.now() - startTime;
 
@@ -83,10 +134,13 @@ export class DeepSeekClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: apiResponse.model || 'deepseek-chat' // Use model from API response
+                model: apiResponse.model || configuredModel // Use model from API response or configured model
             };
         } catch (error) {
             console.error(`[DeepSeek] Execution failed: ${error}`);
+            if (error instanceof ProviderError) {
+                throw error;
+            }
             throw new Error(`DeepSeek execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -112,6 +166,9 @@ export class DeepSeekClient extends BaseAIClient {
         try {
             // Use real DeepSeek API with streaming
             // Utiliser l'API DeepSeek réelle avec streaming
+            const config = vscode.workspace.getConfiguration('aiAnalytics');
+            const configuredModel = config.get('deepseekModel') as string;
+
             const apiResponse = await this.deepseekChatStreaming(prompt, streamingCallback);
             const latency = Date.now() - startTime;
 
@@ -130,10 +187,13 @@ export class DeepSeekClient extends BaseAIClient {
                 cost: this.calculateCost(inputTokens, outputTokens),
                 latency,
                 cacheHit: false,
-                model: 'deepseek-chat'
+                model: configuredModel
             };
         } catch (error) {
             console.error(`[DeepSeek] Streaming execution failed: ${error}`);
+            if (error instanceof ProviderError) {
+                throw error;
+            }
             throw new Error(`DeepSeek streaming execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -176,12 +236,25 @@ export class DeepSeekClient extends BaseAIClient {
      * Discuter avec DeepSeek en utilisant l'API réelle
      */
     private async deepseekChat(prompt: string): Promise<{ content: string; usage?: any; model?: string }> {
-        const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+        const apiUrl = getChatUrl('deepseek');
 
         const systemPrompt = loadSystemPrompt();
 
+        // Get configured model from settings
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+        const configuredModel = config.get('deepseekModel') as string;
+
+        if (!configuredModel || configuredModel.trim() === '') {
+            // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
+            if (this.apiKey && this.apiKey.trim() !== '') {
+                throw new Error('DeepSeek model not configured - please select a model in settings');
+            }
+            // Si aucune clé API n'est configurée, le provider n'est pas disponible
+            throw new Error('DeepSeek API key not configured');
+        }
+
         const requestBody = {
-            model: 'deepseek-chat',
+            model: configuredModel,
             messages: [
                 {
                     role: 'system',
@@ -240,12 +313,25 @@ export class DeepSeekClient extends BaseAIClient {
      * Discuter avec DeepSeek en utilisant l'API réelle avec streaming
      */
     private async deepseekChatStreaming(prompt: string, streamingCallback: StreamingCallback): Promise<{ content: string; usage?: any }> {
-        const apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+        const apiUrl = getChatUrl('deepseek');
 
         const systemPrompt = loadSystemPrompt();
 
+        // Get configured model from settings
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+        const configuredModel = config.get('deepseekModel') as string;
+
+        if (!configuredModel || configuredModel.trim() === '') {
+            // Si aucun modèle n'est configuré mais qu'une clé API existe, demander à configurer un modèle
+            if (this.apiKey && this.apiKey.trim() !== '') {
+                throw new Error('DeepSeek model not configured - please select a model in settings');
+            }
+            // Si aucune clé API n'est configurée, le provider n'est pas disponible
+            throw new Error('DeepSeek API key not configured');
+        }
+
         const requestBody = {
-            model: 'deepseek-chat',
+            model: configuredModel,
             messages: [
                 {
                     role: 'system',
@@ -286,6 +372,12 @@ export class DeepSeekClient extends BaseAIClient {
         return new Promise((resolve, reject) => {
             const postData = JSON.stringify(body);
             const urlObj = new URL(url);
+            const config = getProviderConfig('deepseek');
+
+            // Vérifier que les headers existent
+            if (!config.headers) {
+                throw new Error('Provider configuration missing headers');
+            }
 
             const options = {
                 hostname: urlObj.hostname,
@@ -294,7 +386,7 @@ export class DeepSeekClient extends BaseAIClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    [config.headers.authHeader]: `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
                 },
                 timeout: this.timeout
@@ -303,7 +395,13 @@ export class DeepSeekClient extends BaseAIClient {
             // Set up timeout
             const timeoutId = setTimeout(() => {
                 req.destroy();
-                reject(new Error(`Request timeout after ${this.timeout}ms - DeepSeek API did not respond`));
+                const error = ProviderError.fromNetworkError(
+                    'deepseek',
+                    'DeepSeek',
+                    new Error(`Request timeout after ${this.timeout}ms - DeepSeek API did not respond`)
+                );
+                this.handleApiError(error);
+                reject(error);
             }, this.timeout);
 
             const req = https.request(options, (res) => {
@@ -320,21 +418,37 @@ export class DeepSeekClient extends BaseAIClient {
                             const parsedData = JSON.parse(data);
                             resolve(parsedData);
                         } catch (parseError) {
-                            reject(new Error(`Failed to parse API response: ${parseError}`));
+                            const error = new ProviderError(
+                                'deepseek',
+                                'DeepSeek',
+                                ProviderStatus.API_ERROR,
+                                `Failed to parse API response: ${parseError}`
+                            );
+                            this.handleApiError(error);
+                            reject(error);
                         }
                     } else {
-                        reject(new Error(`API error ${res.statusCode}: ${data}`));
+                        const error = ProviderError.fromHttpError(
+                            'deepseek',
+                            'DeepSeek',
+                            res.statusCode || 0,
+                            data
+                        );
+                        this.handleApiError(error);
+                        reject(error);
                     }
                 });
             });
 
             req.on('error', (error: any) => {
                 clearTimeout(timeoutId);
-                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-                    reject(new Error(`Connection timeout or reset - DeepSeek API may be unavailable: ${error.message}`));
-                } else {
-                    reject(new Error(`Network error: ${error.message}`));
-                }
+                const providerError = ProviderError.fromNetworkError(
+                    'deepseek',
+                    'DeepSeek',
+                    error
+                );
+                this.handleApiError(providerError);
+                reject(providerError);
             });
 
             req.on('timeout', () => {
@@ -356,6 +470,12 @@ export class DeepSeekClient extends BaseAIClient {
         return new Promise((resolve, reject) => {
             const postData = JSON.stringify(body);
             const urlObj = new URL(url);
+            const config = getProviderConfig('deepseek');
+
+            // Vérifier que les headers existent
+            if (!config.headers) {
+                throw new Error('Provider configuration missing headers');
+            }
 
             const options = {
                 hostname: urlObj.hostname,
@@ -364,7 +484,7 @@ export class DeepSeekClient extends BaseAIClient {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.apiKey}`,
+                    [config.headers.authHeader]: `Bearer ${this.apiKey}`,
                     'Content-Length': Buffer.byteLength(postData)
                 },
                 timeout: this.timeout
@@ -414,7 +534,8 @@ export class DeepSeekClient extends BaseAIClient {
 
                                     if (delta.content) {
                                         fullContent += delta.content;
-                                        streamingCallback.onChunk(fullContent);
+                                        // Send only the delta content, not the accumulated content
+                                        streamingCallback.onChunk(delta.content);
                                     }
 
                                     if (data.usage) {
@@ -438,18 +559,27 @@ export class DeepSeekClient extends BaseAIClient {
                             usage
                         });
                     } else {
-                        reject(new Error(`API error ${res.statusCode}`));
+                        const error = ProviderError.fromHttpError(
+                            'deepseek',
+                            'DeepSeek',
+                            res.statusCode || 0,
+                            'Streaming request failed'
+                        );
+                        this.handleApiError(error);
+                        reject(error);
                     }
                 });
             });
 
             req.on('error', (error: any) => {
                 clearTimeout(timeoutId);
-                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-                    reject(new Error(`Connection timeout or reset - DeepSeek API may be unavailable: ${error.message}`));
-                } else {
-                    reject(new Error(`Network error: ${error.message}`));
-                }
+                const providerError = ProviderError.fromNetworkError(
+                    'deepseek',
+                    'DeepSeek',
+                    error
+                );
+                this.handleApiError(providerError);
+                reject(providerError);
             });
 
             req.on('timeout', () => {
@@ -487,5 +617,24 @@ export class DeepSeekClient extends BaseAIClient {
             content: randomResponse,
             usage: null
         };
+    }
+
+    /**
+     * Gérer les erreurs d'API et afficher les messages utilisateur
+     */
+    private async handleApiError(error: ProviderError): Promise<void> {
+        // Mettre à jour le statut
+        this.statusManager.updateStatus({
+            providerId: error.providerId,
+            providerName: error.providerName,
+            status: error.status,
+            errorMessage: error.message,
+            errorCode: error.errorCode,
+            lastChecked: new Date(),
+            suggestions: error.suggestions
+        });
+
+        // Afficher l'erreur à l'utilisateur
+        await error.showToUser();
     }
 }

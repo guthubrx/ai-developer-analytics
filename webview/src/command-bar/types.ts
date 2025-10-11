@@ -55,6 +55,7 @@ export interface Settings {
   showMetrics: boolean;
   coachEnabled: boolean;
   coachCollapsedByDefault: boolean;
+  providerStatusCollapsedByDefault: boolean;
   sessionTabsEnabled: boolean;
   autoExpandTextarea: boolean;
   streamingEnabled: boolean;

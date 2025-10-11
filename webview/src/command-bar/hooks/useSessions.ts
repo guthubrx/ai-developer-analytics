@@ -48,6 +48,23 @@ export const useSessions = (vscode: VSCodeAPI) => {
     );
   }, []);
 
+  const updateMessage = useCallback((sessionId: string, messageId: string, updates: Partial<Message>) => {
+    setSessions(prev =>
+      prev.map(session =>
+        session.id === sessionId
+          ? {
+              ...session,
+              messages: session.messages.map(msg =>
+                msg.id === messageId
+                  ? { ...msg, ...updates }
+                  : msg
+              )
+            }
+          : session
+      )
+    );
+  }, []);
+
   // Initialize with a default session if none exist
   useEffect(() => {
     if (sessions.length === 0) {
@@ -61,5 +78,6 @@ export const useSessions = (vscode: VSCodeAPI) => {
     createSession,
     switchSession,
     addMessage,
+    updateMessage,
   };
 };

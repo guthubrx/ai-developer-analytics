@@ -209,14 +209,15 @@
 .config-row {
   display: flex;
   align-items: center;
-  gap: 0;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  gap: 8px;
+  flex-wrap: wrap;
+  overflow-x: hidden;
   padding-bottom: 0;
   background-color: transparent;
   border: none;
   border-radius: 0;
   margin: 0;
+  min-width: 0;
 }
 
 .dropdown-wrapper {
@@ -226,8 +227,8 @@
   border: none;
   border-radius: 0;
   padding: 6px 8px;
-  min-width: auto;
-  flex-shrink: 0;
+  min-width: 0;
+  flex-shrink: 1;
   position: relative;
 }
 
@@ -253,9 +254,14 @@
   border: none;
   color: var(--vscode-input-foreground);
   outline: none;
-  min-width: 70px;
+  min-width: 60px;
+  max-width: 120px;
   font-size: 10px;
   padding: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .settings-button {
@@ -275,6 +281,67 @@
 .settings-button:hover {
   background-color: var(--vscode-input-background);
   opacity: 1;
+}
+
+/* Responsive layout for narrow panels */
+@media (max-width: 500px) {
+  .config-row {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .dropdown-wrapper {
+    flex: 1;
+    min-width: 120px;
+    justify-content: space-between;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 50px;
+    font-size: 9px;
+  }
+
+  .dropdown-icon {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 400px) {
+  .config-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+
+  .dropdown-wrapper {
+    justify-content: space-between;
+    min-width: auto;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 60px;
+    font-size: 9px;
+  }
+
+  .dropdown-icon {
+    font-size: 9px;
+  }
+}
+
+/* Extra small screens */
+@media (max-width: 300px) {
+  .configuration-panel {
+    padding: 8px 12px;
+  }
+
+  .dropdown-wrapper {
+    padding: 3px 6px;
+  }
+
+  .dropdown-wrapper select {
+    min-width: 40px;
+    font-size: 8px;
+  }
 }
 
 /* Input Form */

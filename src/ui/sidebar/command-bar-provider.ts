@@ -12,6 +12,8 @@ import { AICoach } from '../../coaching/coach';
 import { SessionManager } from '../../sessions/manager';
 import { AIRoutingMode, AIProvider, StreamingCallback } from '../../ai/types';
 import { ModelChecker } from '../../ai/model-checker';
+import { ProviderStatusManager, ProviderStatusInfo } from '../../ai/providers/provider-status';
+import { ProviderManager } from '../../ai/providers/provider-manager';
 
 /**
  * AI Command Bar WebView Provider - Mockup
@@ -27,6 +29,8 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private readonly sessionManager: SessionManager;
     private readonly context: vscode.ExtensionContext;
     private readonly modelChecker: ModelChecker;
+    private readonly providerStatusManager: ProviderStatusManager;
+    private readonly providerManager: ProviderManager;
 
     constructor(
         extensionUri: vscode.Uri,
@@ -42,6 +46,13 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         this.sessionManager = sessionManager;
         this.context = context;
         this.modelChecker = new ModelChecker();
+        this.providerStatusManager = ProviderStatusManager.getInstance();
+        this.providerManager = new ProviderManager(context);
+
+        // Initialize provider manager
+        this.providerManager.initialize().catch(error => {
+            console.error('❌ Failed to initialize Provider Manager:', error);
+        });
 
         // Temporary usage to avoid TypeScript error
         console.log('Session Manager initialized:', this.sessionManager.constructor.name);
@@ -66,6 +77,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         _context: vscode.WebviewViewResolveContext,
         _token: vscode.CancellationToken,
     ) {
+        console.log('🔍 [COMMAND-BAR] resolveWebviewView called - creating webview');
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -77,18 +89,27 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
 
         const html = this._getHtmlForWebview(webviewView.webview);
         webviewView.webview.html = html;
-        console.log('WebView HTML loaded, checking for file-autocomplete...');
-        console.log('HTML contains file-autocomplete:', html.includes('file-autocomplete'));
+        console.log('✅ [COMMAND-BAR] WebView HTML loaded');
+        console.log('📄 [COMMAND-BAR] HTML contains file-autocomplete:', html.includes('file-autocomplete'));
 
         // Reset any stuck loading states
+        console.log('🔄 [COMMAND-BAR] Sending resetLoadingState message');
         this._view.webview.postMessage({
             type: 'resetLoadingState'
         });
 
         webviewView.webview.onDidReceiveMessage(
             async data => {
+                console.log(`📥 [COMMAND-BAR] Received message type: ${data.type}`, data);
                 switch (data.type) {
                     case 'executePrompt':
+                        console.log('📥 [COMMAND-BAR-DEBUG] Received executePrompt message from webview');
+                        console.log('📋 [COMMAND-BAR-DEBUG] Data received:', {
+                            prompt: data.prompt?.substring(0, 50) + '...',
+                            routingMode: data.routingMode,
+                            provider: data.provider,
+                            conversationContextLength: data.conversationContext?.length || 0
+                        });
                         await this.handleExecutePrompt(data.prompt, data.routingMode, data.provider, data.conversationContext);
                         break;
                     case 'getSettings':
@@ -128,12 +149,18 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         await this.handleCheckProviderModels(data.provider, data.messageId);
                         break;
                     case 'getModels':
+                        console.log('📥 [COMMAND-BAR] Received getModels request for provider:', data.provider);
                         await this.handleGetModels(data.provider);
+                        break;
+                    case 'getProvidersStatus':
+                        await this.handleGetProvidersStatus();
                         break;
                     case 'webviewReady':
                         console.log('WebView is ready and loaded');
                         // Send initial settings when webview is ready
                         await this.handleGetSettings();
+                        // Register webview callback for provider status updates
+                        this.registerProviderStatusCallback();
                         break;
                 }
             }
@@ -150,16 +177,25 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         provider?: AIProvider | 'auto',
         conversationContext?: any[]
     ) {
+        console.log('🔍 [COMMAND-BAR-DEBUG] handleExecutePrompt called');
+        console.log('📝 [COMMAND-BAR-DEBUG] Prompt:', prompt.substring(0, 100) + '...');
+        console.log('🎯 [COMMAND-BAR-DEBUG] Routing mode:', routingMode);
+        console.log('🤖 [COMMAND-BAR-DEBUG] Provider:', provider);
+        console.log('💬 [COMMAND-BAR-DEBUG] Conversation context length:', conversationContext?.length || 0);
+
         if (!this._view) {
+            console.error('❌ [COMMAND-BAR-DEBUG] No webview available!');
             return;
         }
 
         try {
+            console.log('🚀 [COMMAND-BAR-DEBUG] Sending executionStarted message to webview');
             this._view.webview.postMessage({
                 type: 'executionStarted',
                 prompt
             });
 
+            console.log('📡 [COMMAND-BAR-DEBUG] Sending streamingStarted message to webview');
             // Create a streaming response element in the UI
             this._view.webview.postMessage({
                 type: 'streamingStarted'
@@ -216,10 +252,13 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                 }
             };
 
+            console.log('🔄 [COMMAND-BAR-DEBUG] Calling AI Router with streaming...');
             // Execute with real streaming and conversation context
             await this.aiRouter.executeWithStreaming(prompt, routingMode, provider, streamingCallback, conversationContext);
+            console.log('✅ [COMMAND-BAR-DEBUG] AI Router execution completed');
 
         } catch (error) {
+            console.error('❌ [COMMAND-BAR-DEBUG] Error in handleExecutePrompt:', error);
             this._view.webview.postMessage({
                 type: 'executionError',
                 error: error instanceof Error ? error.message : 'Unknown error'
@@ -264,6 +303,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             showMetrics: config.get('showMetrics'),
             coachEnabled: config.get('coachEnabled'),
             coachCollapsedByDefault: config.get('coachCollapsedByDefault'),
+            providerStatusCollapsedByDefault: config.get('providerStatusCollapsedByDefault', false),
             sessionTabsEnabled: config.get('sessionTabsEnabled'),
             autoExpandTextarea: config.get('autoExpandTextarea'),
             streamingEnabled: config.get('streamingEnabled'),
@@ -600,20 +640,39 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
      * Gérer la demande de récupération des modèles depuis la webview
      */
     private async handleGetModels(provider: string) {
+        console.log('========== HANDLE GET MODELS ==========');
+        console.log('Provider:', provider);
+        console.log('WebView available:', !!this._view);
+        console.log('=======================================');
+
         try {
+            console.log(`📡 [COMMAND-BAR] Starting model check for provider: ${provider}`);
             const models = await this.modelChecker.checkProviderModels(provider);
+            console.log(`✅ [COMMAND-BAR] Models retrieved for ${provider}: ${models.length} models`);
+
+            if (models.length > 0) {
+                console.log('📋 [COMMAND-BAR] Retrieved models:');
+                models.forEach(model => {
+                    console.log(`   - ${model.name} (${model.id}) - Available: ${model.available}`);
+                });
+            }
 
             if (this._view) {
+                console.log(`📤 [COMMAND-BAR] Sending models to webview for ${provider}`);
                 this._view.webview.postMessage({
                     type: 'modelsLoaded',
                     provider: provider,
                     models: models
                 });
+                console.log(`📨 [COMMAND-BAR] Message sent to webview for ${provider}`);
+            } else {
+                console.warn(`❌ [COMMAND-BAR] No webview available to send models for ${provider}`);
             }
         } catch (error) {
-            console.error(`Error getting models for ${provider}:`, error);
+            console.error(`❌ [COMMAND-BAR] Error getting models for ${provider}:`, error);
 
             if (this._view) {
+                console.log(`📤 [COMMAND-BAR] Sending error to webview for ${provider}`);
                 this._view.webview.postMessage({
                     type: 'modelsError',
                     provider: provider,
@@ -624,11 +683,53 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     }
 
     /**
+     * Handle get providers status
+     * Gérer l'obtention du statut des providers
+     */
+    private async handleGetProvidersStatus(): Promise<void> {
+        if (!this._view) {
+            return;
+        }
+
+        try {
+            const providers = await this.providerManager.getAllProviders();
+            console.log(`🔍 [COMMAND-BAR] Sending ${providers.length} providers to webview`);
+
+            this._view.webview.postMessage({
+                type: 'providersStatus',
+                providers: providers
+            });
+        } catch (error) {
+            console.error('❌ [COMMAND-BAR] Error getting providers:', error);
+            this._view.webview.postMessage({
+                type: 'providersError',
+                error: 'Failed to load providers'
+            });
+        }
+    }
+
+    /**
+     * Register callback for provider status updates
+     * Enregistrer le callback pour les mises à jour de statut des providers
+     */
+    private registerProviderStatusCallback(): void {
+        this.providerStatusManager.setWebviewCallback((providers: ProviderStatusInfo[]) => {
+            if (this._view) {
+                this._view.webview.postMessage({
+                    type: 'providersStatus',
+                    providers
+                });
+            }
+        });
+    }
+
+    /**
      * Dispose the provider
      * Libérer le fournisseur
      */
     public dispose(): void {
-        // Clean up any resources if needed
+        // Clean up provider status callback
+        this.providerStatusManager.clearWebviewCallback();
     }
 }
 

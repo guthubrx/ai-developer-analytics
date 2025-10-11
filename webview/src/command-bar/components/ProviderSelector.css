@@ -1,0 +1,242 @@
+/*
+ * Provider Selector Styles
+ * Styles pour le composant de sélection des providers
+ *
+ * @license AGPL-3.0-only
+ */
+
+.provider-selector {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* En-tête */
+.provider-selector-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.provider-selector-header h3 {
+  margin: 0 0 8px 0;
+  color: #111827;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.provider-selector-subtitle {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* Container du dropdown */
+.provider-dropdown-container {
+  margin-bottom: 24px;
+}
+
+/* États de chargement et d'erreur */
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-state {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+}
+
+.error-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+}
+
+.retry-button {
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.retry-button:hover {
+  background: #2563eb;
+}
+
+/* Informations du provider sélectionné */
+.provider-info {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.provider-info h4 {
+  margin: 0 0 12px 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.provider-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.detail-label {
+  color: #6b7280;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.detail-value {
+  color: #111827;
+  font-size: 14px;
+}
+
+.status-ready {
+  color: #059669;
+  font-weight: 500;
+}
+
+.status-missing {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Section des statistiques */
+.provider-stats-section {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Section d'avertissement */
+.warning-section {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.warning-icon {
+  font-size: 16px;
+}
+
+.warning-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.warning-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.warning-item .provider-name {
+  font-weight: 500;
+  color: #111827;
+}
+
+.warning-item .warning-text {
+  color: #92400e;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .provider-selector {
+    padding: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .provider-selector-header h3 {
+    font-size: 20px;
+  }
+}

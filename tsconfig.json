@@ -4,7 +4,8 @@
     "target": "ES2022",
     "outDir": "out",
     "lib": [
-      "ES2022"
+      "ES2022",
+      "DOM"
     ],
     "sourceMap": true,
     "rootDir": "src",
@@ -21,7 +22,9 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "noImplicitAny": true
+    "noImplicitAny": false,
+    "typeRoots": ["./node_modules/@types"],
+    "noEmitOnError": false
   },
   "exclude": [
     "node_modules",

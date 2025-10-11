@@ -12,20 +12,48 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, settings 
   const isError = message.type === 'error';
 
   const formatContent = (content: string) => {
-    // Simple markdown-like formatting for code blocks
+    let formattedContent = content;
+
+    // Format code blocks
     const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-    const formattedContent = content.replace(codeBlockRegex, (match, language, code) => {
+    formattedContent = formattedContent.replace(codeBlockRegex, (match, language, code) => {
       return `<pre class="code-block"><code class="language-${language || 'text'}">${code.trim()}</code></pre>`;
     });
+
+    // Format inline code
+    const inlineCodeRegex = /`([^`]+)`/g;
+    formattedContent = formattedContent.replace(inlineCodeRegex, '<code class="inline-code">$1</code>');
+
+    // Format bold text
+    const boldRegex = /\*\*(.*?)\*\*/g;
+    formattedContent = formattedContent.replace(boldRegex, '<strong>$1</strong>');
+
+    // Format italic text
+    const italicRegex = /\*(.*?)\*/g;
+    formattedContent = formattedContent.replace(italicRegex, '<em>$1</em>');
+
+    // Convert line breaks to <br> tags
+    formattedContent = formattedContent.replace(/\n/g, '<br>');
 
     return { __html: formattedContent };
   };
 
+  // Get model name for display - use model if available, otherwise provider
+  const getModelName = () => {
+    if (message.model) {
+      return message.model;
+    }
+    if (message.provider) {
+      return message.provider;
+    }
+    return 'AI';
+  };
+
   return (
-    <div className={`message-bubble ${message.type}`}>
+    <div className={`message-container ${message.type}`}>
       <div className="message-header">
         <span className="message-sender">
-          {isUser ? 'You' : message.provider || 'AI'}
+          {isUser ? 'You' : getModelName()}
         </span>
         <span className="message-time">
           {message.timestamp.toLocaleTimeString()}

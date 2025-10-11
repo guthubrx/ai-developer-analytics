@@ -3,17 +3,8 @@ import ReactDOM from 'react-dom/client';
 import { CommandBarApp } from './components/CommandBarApp';
 import './styles/global.css';
 
-// VS Code API - Mock for browser development
-const vscode = typeof acquireVsCodeApi !== 'undefined'
-  ? acquireVsCodeApi()
-  : {
-      postMessage: (message: any) => console.log('VSCode API Mock - Post Message:', message),
-      setState: (state: any) => console.log('VSCode API Mock - Set State:', state),
-      getState: () => {
-        console.log('VSCode API Mock - Get State');
-        return null;
-      }
-    };
+// VS Code API
+const vscode = acquireVsCodeApi();
 
 console.log('Starting React application...');
 

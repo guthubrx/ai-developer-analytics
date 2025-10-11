@@ -34,7 +34,6 @@ Thumbs.db
 
 # Fichiers de documentation de développement
 docs/
-prompts/
 PROJET-PLAN.md
 DEEPSEEK_TIMEOUT_FIX.md
 MCP_CAPABILITIES.md

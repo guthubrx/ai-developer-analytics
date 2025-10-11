@@ -2,8 +2,8 @@
   "name": "ai-developer-analytics",
   "type": "commonjs",
   "displayName": "AI Developer Analytics",
-  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 09/10/2025 08:55:51 CEST",
-  "version": "0.3.10",
+  "description": "Hybrid AI developer analytics extension with dual-level routing, local Ollama support, and adaptive coaching - Built: 11/10/2025 08:36:02 CEST",
+  "version": "0.3.12",
   "publisher": "ai-analytics",
   "license": "AGPL-3.0-only",
   "icon": "media/icon.png",
@@ -99,6 +99,21 @@
       {
         "command": "ai-analytics.selectModel",
         "title": "Select AI Model",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-developer-analytics.providers.showStatus",
+        "title": "Show Provider Status",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-developer-analytics.providers.export",
+        "title": "Export Provider Configuration",
+        "category": "AI Analytics"
+      },
+      {
+        "command": "ai-developer-analytics.providers.reset",
+        "title": "Reset Providers to Defaults",
         "category": "AI Analytics"
       }
     ],
@@ -259,6 +274,11 @@
           "default": true,
           "description": "Collapse coach advice section by default"
         },
+        "aiAnalytics.providerStatusCollapsedByDefault": {
+          "type": "boolean",
+          "default": false,
+          "description": "Collapse provider status section by default"
+        },
         "aiAnalytics.sessionTabsEnabled": {
           "type": "boolean",
           "default": true,
@@ -327,7 +347,9 @@
     "deploy": "node scripts/deploy.js",
     "deploy:next": "npm version patch && node scripts/deploy.js",
     "commit": "node scripts/smart-commit.js",
-    "commit:custom": "node scripts/smart-commit.js"
+    "commit:custom": "node scripts/smart-commit.js",
+    "storage:info": "./scripts/storage-info.sh",
+    "storage:quick": "./scripts/quick-storage-info.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.40.0",
@@ -344,10 +366,10 @@
     "vsce": "^2.15.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.25.0",
+    "@anthropic-ai/sdk": "^0.25.2",
     "axios": "^1.12.2",
     "crypto-js": "^4.2.0",
     "lru-cache": "^10.0.0",
-    "openai": "^4.0.0"
+    "openai": "^4.104.0"
   }
 }

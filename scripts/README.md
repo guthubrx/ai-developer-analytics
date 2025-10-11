@@ -1,5 +1,50 @@
 # 🛠️ Scripts de Build Sécurisé - AI Developer Analytics
 
+## Résumé ##
+⏺ Voici les scripts npm disponibles dans votre projet :
+
+  🛠️ Scripts de Build & Développement
+
+  Build principal :
+
+  - npm run compile - Compilation complète (TypeScript + MCP + Webview)
+  - npm run package - Création du VSIX
+
+  Composants individuels :
+
+  - npm run build:mcp - Build du serveur MCP
+  - npm run build:webview - Build du webview React
+  - npm run dev:webview - Dev server webview
+
+  Validation & Sécurité :
+
+  - npm run build:safe - Build avec vérifications
+  - npm run validate - Validation pré-build
+  - npm run pre-build-check - Vérifications avant build
+
+  Déploiement :
+
+  - npm run deploy - Déploiement standard
+  - npm run deploy:next - Déploiement avec version patch
+
+  Utilitaires :
+
+  - npm run storage:info - Info stockage providers
+  - npm run storage:quick - Résumé rapide stockage
+  - npm run commit - Commit intelligent
+
+  🎯 Pour créer un VSIX :
+
+  npm run package
+
+  🔧 Pour build complet :
+
+  npm run compile
+
+  Votre projet a une configuration très complète avec de nombreux scripts utilitaires !
+
+
+  
 ## 📋 Vue d'Ensemble
 
 Ce dossier contient tous les scripts nécessaires pour un système de build sécurisé et fiable.
