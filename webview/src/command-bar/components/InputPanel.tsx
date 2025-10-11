@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ConfigurationPanel } from './ConfigurationPanel';
+import { useConfiguration } from '../hooks/useConfiguration';
 import type { Settings } from '../types';
 
 interface InputPanelProps {
@@ -16,13 +17,7 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   vscode,
 }) => {
   const [prompt, setPrompt] = useState('');
-  const [configuration, setConfiguration] = useState({
-    mode: settings.defaultMode || 'auto',
-    provider: settings.defaultEngine || 'deepseek',
-    model: '',
-    task: settings.defaultTaskType || 'general',
-    routingMode: settings.routingMode || 'normal',
-  });
+  const { configuration, updateConfiguration } = useConfiguration(settings);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +40,8 @@ export const InputPanel: React.FC<InputPanelProps> = ({
   }, [handleSubmit]);
 
   const handleConfigurationChange = useCallback((newConfig: Partial<typeof configuration>) => {
-    setConfiguration(prev => ({ ...prev, ...newConfig }));
-  }, []);
+    updateConfiguration(newConfig);
+  }, [updateConfiguration]);
 
   return (
     <div className="input-panel">
