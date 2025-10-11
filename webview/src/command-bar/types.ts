@@ -92,3 +92,19 @@ export interface Configuration {
   task?: string;
   routingMode?: string;
 }
+
+// Provider Info types
+export interface ProviderInfo {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  apiKeyConfigured: boolean;
+  lastChecked?: string;
+  metadata?: {
+    supportsStreaming?: boolean;
+    supportsToolCalls?: boolean;
+    maxContextTokens?: number;
+    costPerMillionTokens?: number;
+  };
+}

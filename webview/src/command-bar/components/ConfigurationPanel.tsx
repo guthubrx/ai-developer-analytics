@@ -1,8 +1,7 @@
 import React, { useEffect } from 'react';
 import { useModels } from '../hooks/useModels';
 import { useProviders } from '../hooks/useProviders';
-import { ProviderDropdown } from './ProviderDropdown';
-import type { Settings, VSCodeAPI, ProviderInfo } from '../types';
+import type { Settings, VSCodeAPI } from '../types';
 
 interface ConfigurationPanelProps {
   configuration: {
@@ -27,7 +26,37 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 }) => {
   const isManualMode = configuration.mode === 'manual';
   const { models, loading, error } = useModels(vscode, configuration.provider);
-  const { providers, selectedProvider, selectProvider } = useProviders(vscode);
+  const { providers, loading: providersLoading } = useProviders(vscode);
+
+  // Charger les modèles quand le provider change
+  useEffect(() => {
+    if (configuration.provider) {
+      console.log(`🔄 Provider changed to: ${configuration.provider}`);
+    }
+  }, [configuration.provider]);
+
+  // Helper pour obtenir le statut du provider
+  const getProviderStatus = (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+    if (!provider) return '';
+    if (!provider.enabled) return ' [Désactivé]';
+    if (!provider.apiKeyConfigured) return ' [Clé API manquante]';
+    return '';
+  };
+
+  // Helper pour vérifier si un provider est sélectionnable
+  const isProviderSelectable = (providerId: string) => {
+    const provider = providers.find(p => p.id === providerId);
+    return provider && provider.enabled && provider.apiKeyConfigured;
+  };
+
+  // Helper pour obtenir le statut du modèle
+  const getModelStatus = (modelId: string) => {
+    const model = models.find(m => m.id === modelId);
+    if (!model) return '';
+    if (!model.available) return ' [Non disponible]';
+    return '';
+  };
 
   return (
     <div className="configuration-panel">
@@ -46,17 +75,39 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 
         {isManualMode ? (
           <>
-            <div className="provider-dropdown-container">
+            <div className="dropdown-wrapper">
               <span className="dropdown-icon">◉</span>
-              <ProviderDropdown
-                providers={providers}
-                selectedProvider={selectedProvider}
-                onProviderSelect={(provider: ProviderInfo) => {
-                  selectProvider(provider);
-                  onChange({ provider: provider.id });
+              <select
+                value={configuration.provider}
+                onChange={(e) => {
+                  const newProvider = e.target.value;
+                  onChange({ 
+                    provider: newProvider,
+                    model: '' // Reset le modèle quand on change de provider
+                  });
                 }}
-                placeholder="Sélectionner un provider..."
-              />
+                style={{ fontSize: `${settings.dropdownFontSize}px` }}
+                disabled={providersLoading}
+                className={!configuration.provider ? 'placeholder' : ''}
+              >
+                <option value="" disabled>
+                  {providersLoading ? 'Chargement...' : 'Sélectionner un provider'}
+                </option>
+                {providers.map((provider) => (
+                  <option 
+                    key={provider.id} 
+                    value={provider.id}
+                    disabled={!isProviderSelectable(provider.id)}
+                    className={
+                      !provider.enabled ? 'disabled-option' :
+                      !provider.apiKeyConfigured ? 'warning-option' : 
+                      ''
+                    }
+                  >
+                    {provider.name}{getProviderStatus(provider.id)}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="dropdown-wrapper">
@@ -65,14 +116,22 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
                 value={configuration.model}
                 onChange={(e) => onChange({ model: e.target.value })}
                 style={{ fontSize: `${settings.dropdownFontSize}px` }}
-                disabled={loading}
+                disabled={loading || !configuration.provider}
+                className={!configuration.model ? 'placeholder' : ''}
               >
-                <option value="">
-                  {loading ? 'Loading models...' : 'Select Model'}
+                <option value="" disabled>
+                  {loading ? 'Chargement des modèles...' : 
+                   !configuration.provider ? 'Sélectionnez d\'abord un provider' :
+                   'Sélectionner un modèle'}
                 </option>
                 {models.map((model) => (
-                  <option key={model.id} value={model.id}>
-                    {model.name}
+                  <option 
+                    key={model.id} 
+                    value={model.id}
+                    disabled={!model.available}
+                    className={!model.available ? 'disabled-option' : ''}
+                  >
+                    {model.name}{getModelStatus(model.id)}
                   </option>
                 ))}
               </select>

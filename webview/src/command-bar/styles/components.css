@@ -277,22 +277,6 @@
   .dropdown-icon {
     font-size: 10px;
   }
-
-  .provider-dropdown-container {
-    flex: 1;
-    min-width: 120px;
-    justify-content: space-between;
-  }
-
-  .provider-dropdown {
-    min-width: 50px;
-    font-size: 11px;
-  }
-
-  .provider-dropdown-container .dropdown-icon {
-    left: 6px;
-    font-size: 10px;
-  }
 }
 
 @media (max-width: 400px) {
@@ -315,21 +299,6 @@
   .dropdown-icon {
     font-size: 10px;
   }
-
-  .provider-dropdown-container {
-    justify-content: space-between;
-    min-width: auto;
-  }
-
-  .provider-dropdown {
-    min-width: 60px;
-    font-size: 11px;
-  }
-
-  .provider-dropdown-container .dropdown-icon {
-    left: 6px;
-    font-size: 10px;
-  }
 }
 
 /* Extra small screens */
@@ -346,20 +315,6 @@
     min-width: 40px;
     font-size: 10px;
   }
-
-  .provider-dropdown-container {
-    padding: 0;
-  }
-
-  .provider-dropdown {
-    min-width: 40px;
-    font-size: 10px;
-  }
-
-  .provider-dropdown-container .dropdown-icon {
-    left: 4px;
-    font-size: 8px;
-  }
 }
 
 .dropdown-wrapper {
@@ -369,15 +324,26 @@
   border: 1px solid var(--vscode-input-border);
   border-radius: 4px;
   padding: 4px 8px;
-  flex-shrink: 1; /* Permet la réduction sur petits écrans */
-  min-width: 0; /* Permet aux enfants de se réduire */
+  flex-shrink: 1;
+  min-width: 0;
+  transition: all 0.2s ease;
+}
+
+.dropdown-wrapper:hover {
+  border-color: var(--vscode-focusBorder);
+  background-color: var(--vscode-inputOption-hoverBackground);
+}
+
+.dropdown-wrapper:focus-within {
+  border-color: var(--vscode-focusBorder);
+  box-shadow: 0 0 0 1px var(--vscode-focusBorder);
 }
 
 .dropdown-icon {
   margin-right: 6px;
   font-size: 12px;
   opacity: 0.7;
-  flex-shrink: 0; /* Empêche l'icône de se réduire */
+  flex-shrink: 0;
 }
 
 .dropdown-wrapper select {
@@ -385,12 +351,55 @@
   border: none;
   color: var(--vscode-input-foreground);
   outline: none;
-  min-width: 60px; /* Largeur minimale réduite */
-  max-width: 120px; /* Largeur maximale réduite */
+  min-width: 60px;
+  max-width: 120px;
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.dropdown-wrapper select:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Style pour les options du dropdown */
+.dropdown-wrapper select option {
+  background-color: var(--vscode-dropdown-background);
+  color: var(--vscode-dropdown-foreground);
+  padding: 4px 8px;
+}
+
+.dropdown-wrapper select option:hover {
+  background-color: var(--vscode-list-hoverBackground);
+}
+
+.dropdown-wrapper select option:disabled {
+  color: var(--vscode-disabledForeground);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Options désactivées - grisées */
+.dropdown-wrapper select option.disabled-option {
+  color: var(--vscode-disabledForeground);
+  opacity: 0.5;
+  font-style: italic;
+}
+
+/* Options avec warning - jaune/orange */
+.dropdown-wrapper select option.warning-option {
+  color: var(--vscode-inputValidation-warningForeground);
+  font-style: italic;
+}
+
+/* Style pour le placeholder */
+.dropdown-wrapper select.placeholder {
+  color: var(--vscode-input-placeholderForeground);
+  font-style: italic;
 }
 
 .settings-button {
@@ -490,41 +499,7 @@
   font-size: 14px;
 }
 
-/* Provider Dropdown Container - EXACTEMENT comme dropdown-wrapper */
-.provider-dropdown-container {
-  display: flex;
-  align-items: center;
-  background-color: var(--vscode-input-background);
-  border: 1px solid var(--vscode-input-border);
-  border-radius: 4px;
-  padding: 4px 8px;
-  flex-shrink: 1;
-  min-width: 0;
-}
-
-.provider-dropdown-container .dropdown-icon {
-  margin-right: 6px;
-  font-size: 12px;
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-/* Provider dropdown doit ressembler exactement à dropdown-wrapper */
-.provider-dropdown {
-  background: none;
-  border: none;
-  color: var(--vscode-input-foreground);
-  outline: none;
-  min-width: 60px;
-  max-width: 120px;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 12px;
-  padding: 0;
-  margin: 0;
-}
+/* Styles obsolètes du provider-dropdown-container supprimés - maintenant utilise dropdown-wrapper */
 
 /* Provider Status */
 .provider-status {

@@ -35,11 +35,30 @@ export class ProviderManager {
             await this.storage.initialize();
             await this.updateStatusBar();
             this.registerCommands();
+            this.registerConfigurationListener();
             console.log('✅ Provider Manager initialized');
         } catch (error) {
             console.error('❌ Failed to initialize Provider Manager:', error);
             throw error;
         }
+    }
+
+    /**
+     * Register configuration change listener
+     * Enregistrer l'écouteur de changement de configuration
+     */
+    private registerConfigurationListener(): void {
+        this.context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('aiAnalytics')) {
+                    console.log('🔍 [PROVIDER-MANAGER] Configuration changed, updating providers...');
+                    // Forcer la mise à jour des providers au prochain accès
+                    this.updateStatusBar().catch(error => {
+                        console.warn('⚠️ [PROVIDER-MANAGER] Failed to update status bar:', error);
+                    });
+                }
+            })
+        );
     }
 
     /**
@@ -94,11 +113,59 @@ export class ProviderManager {
     }
 
     /**
-     * Get all providers
-     * Obtenir tous les providers
+     * Get all providers with automatic API key detection
+     * Obtenir tous les providers avec détection automatique des clés API
      */
     async getAllProviders(): Promise<ProviderInfo[]> {
-        return await this.storage.loadProviders();
+        const providers = await this.storage.loadProviders();
+
+        // Détecter automatiquement les clés API configurées
+        const updatedProviders = await this.detectApiKeys(providers);
+
+        return updatedProviders;
+    }
+
+    /**
+     * Detect API keys from VSCode settings
+     * Détecter les clés API depuis les settings VSCode
+     */
+    private async detectApiKeys(providers: ProviderInfo[]): Promise<ProviderInfo[]> {
+        const config = vscode.workspace.getConfiguration('aiAnalytics');
+
+        // Map des clés API par provider
+        const apiKeyMap: Record<string, string> = {
+            'openai': config.get('openaiApiKey') || '',
+            'anthropic': config.get('anthropicApiKey') || '',
+            'deepseek': config.get('deepseekApiKey') || '',
+            'moonshot': config.get('moonshotApiKey') || ''
+        };
+
+        // Mettre à jour les providers avec les clés API détectées
+        const updatedProviders = providers.map(provider => {
+            const apiKey = apiKeyMap[provider.id];
+            const hasApiKey = !!apiKey && apiKey.trim().length > 0;
+
+            // Si le statut de la clé API a changé, mettre à jour le provider
+            if (provider.apiKeyConfigured !== hasApiKey) {
+                console.log(`🔍 [PROVIDER-MANAGER] API key status changed for ${provider.name}: ${hasApiKey ? 'Configured' : 'Not configured'}`);
+
+                // Mettre à jour le provider dans le stockage
+                this.storage.updateProvider(provider.id, {
+                    apiKeyConfigured: hasApiKey
+                }).catch(error => {
+                    console.warn(`⚠️ [PROVIDER-MANAGER] Failed to update provider ${provider.id}:`, error);
+                });
+
+                return {
+                    ...provider,
+                    apiKeyConfigured: hasApiKey
+                };
+            }
+
+            return provider;
+        });
+
+        return updatedProviders;
     }
 
     /**
