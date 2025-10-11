@@ -149,6 +149,10 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
                         console.log('📥 [COMMAND-BAR] Received getModels request for provider:', data.provider);
                         await this.handleGetModels(data.provider);
                         break;
+                    case 'getProvidersStatus':
+                        console.log('📥 [COMMAND-BAR] Received getProvidersStatus request');
+                        await this.handleGetProvidersStatus();
+                        break;
                     case 'webviewReady':
                         console.log('WebView is ready and loaded');
                         // Send initial settings when webview is ready
@@ -673,6 +677,49 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
         }
     }
 
+    /**
+     * Handle get providers status request from webview
+     * Gérer la demande de récupération du statut des providers depuis la webview
+     */
+    private async handleGetProvidersStatus() {
+        console.log('========== HANDLE GET PROVIDERS STATUS ==========');
+        console.log('WebView available:', !!this._view);
+        console.log('=================================================');
+
+        try {
+            console.log('📡 [COMMAND-BAR] Starting providers status check');
+            const providers = await this.providerManager.getAllProviders();
+            console.log(`✅ [COMMAND-BAR] Providers retrieved: ${providers.length} providers`);
+
+            if (providers.length > 0) {
+                console.log('📋 [COMMAND-BAR] Retrieved providers:');
+                providers.forEach(provider => {
+                    console.log(`   - ${provider.name} (${provider.id}) - Enabled: ${provider.enabled}, API Key: ${provider.apiKeyConfigured}`);
+                });
+            }
+
+            if (this._view) {
+                console.log('📤 [COMMAND-BAR] Sending providers to webview');
+                this._view.webview.postMessage({
+                    type: 'providersStatus',
+                    providers: providers
+                });
+                console.log('📨 [COMMAND-BAR] Providers message sent to webview');
+            } else {
+                console.warn('❌ [COMMAND-BAR] No webview available to send providers');
+            }
+        } catch (error) {
+            console.error('❌ [COMMAND-BAR] Error getting providers status:', error);
+
+            if (this._view) {
+                console.log('📤 [COMMAND-BAR] Sending error to webview');
+                this._view.webview.postMessage({
+                    type: 'providersError',
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
+            }
+        }
+    }
 
     /**
      * Dispose the provider

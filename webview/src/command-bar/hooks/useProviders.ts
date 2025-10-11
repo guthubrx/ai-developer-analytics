@@ -27,7 +27,7 @@ interface UseProvidersReturn {
 /**
  * Hook pour gérer les providers avec détection des clés API
  */
-export const useProviders = (vscode?: VSCodeAPI): UseProvidersReturn => {
+export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersReturn => {
   const [providers, setProviders] = useState<ProviderInfo[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<ProviderInfo | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -266,6 +266,24 @@ export const useProviders = (vscode?: VSCodeAPI): UseProvidersReturn => {
   useEffect(() => {
     loadProviders();
   }, [loadProviders]);
+
+  // Réinitialiser l'état de chargement quand on passe en mode manuel
+  useEffect(() => {
+    if (mode === 'manual') {
+      console.log('🔄 Mode changed to manual, checking providers state');
+      // Si on n'a pas de providers ou qu'on est bloqué en chargement, forcer le rechargement
+      if (providers.length === 0) {
+        console.log('🔄 No providers loaded, reloading for manual mode');
+        setLoading(true);
+        setError(null);
+        loadProviders();
+      } else if (loading) {
+        console.log('🔄 Providers loading state detected, ensuring completion');
+        // Forcer la fin du chargement si on a déjà des providers
+        setLoading(false);
+      }
+    }
+  }, [mode, providers.length, loading, loadProviders]);
 
   return {
     providers,

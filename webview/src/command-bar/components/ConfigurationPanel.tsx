@@ -26,7 +26,7 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
 }) => {
   const isManualMode = configuration.mode === 'manual';
   const { models, loading, error } = useModels(vscode, configuration.provider);
-  const { providers, loading: providersLoading } = useProviders(vscode);
+  const { providers, loading: providersLoading } = useProviders(vscode, configuration.mode);
 
   // Charger les modèles quand le provider change
   useEffect(() => {
