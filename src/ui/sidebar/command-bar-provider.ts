@@ -197,7 +197,9 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
             console.log('📡 [COMMAND-BAR-DEBUG] Sending streamingStarted message to webview');
             // Create a streaming response element in the UI
             this._view.webview.postMessage({
-                type: 'streamingStarted'
+                type: 'streamingStarted',
+                provider: provider || 'auto',
+                model: model
             });
 
             // Set up timeout to prevent infinite loading
@@ -439,7 +441,7 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
     private _getHtmlForWebview(webview: vscode.Webview): string {
         // Get the React bundle
         const scriptUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'command-bar.bundle.js'));
-        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'css', 'command-bar.css'));
+        const styleUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'css', 'index.css'));
 
         // Use a nonce to only allow specific scripts to be run
         // Utiliser un nonce pour n'autoriser que des scripts spécifiques à s'exécuter
@@ -638,39 +640,20 @@ export class AICommandBarProvider implements vscode.WebviewViewProvider {
      * Gérer la demande de récupération des modèles depuis la webview
      */
     private async handleGetModels(provider: string) {
-        console.log('========== HANDLE GET MODELS ==========');
-        console.log('Provider:', provider);
-        console.log('WebView available:', !!this._view);
-        console.log('=======================================');
-
         try {
-            console.log(`📡 [COMMAND-BAR] Starting model check for provider: ${provider}`);
             const models = await this.modelChecker.checkProviderModels(provider);
-            console.log(`✅ [COMMAND-BAR] Models retrieved for ${provider}: ${models.length} models`);
-
-            if (models.length > 0) {
-                console.log('📋 [COMMAND-BAR] Retrieved models:');
-                models.forEach(model => {
-                    console.log(`   - ${model.name} (${model.id}) - Available: ${model.available}`);
-                });
-            }
 
             if (this._view) {
-                console.log(`📤 [COMMAND-BAR] Sending models to webview for ${provider}`);
                 this._view.webview.postMessage({
                     type: 'modelsLoaded',
                     provider: provider,
                     models: models
                 });
-                console.log(`📨 [COMMAND-BAR] Message sent to webview for ${provider}`);
-            } else {
-                console.warn(`❌ [COMMAND-BAR] No webview available to send models for ${provider}`);
             }
         } catch (error) {
             console.error(`❌ [COMMAND-BAR] Error getting models for ${provider}:`, error);
 
             if (this._view) {
-                console.log(`📤 [COMMAND-BAR] Sending error to webview for ${provider}`);
                 this._view.webview.postMessage({
                     type: 'modelsError',
                     provider: provider,

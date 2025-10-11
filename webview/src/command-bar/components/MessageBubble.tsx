@@ -40,23 +40,40 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, settings 
 
   // Get model name for display - use model if available, otherwise provider
   const getModelName = () => {
-    if (message.model) {
+    if (message.model && message.model !== 'undefined') {
       return message.model;
     }
     if (message.provider) {
       return message.provider;
     }
-    return 'AI';
+    return 'Assistant IA';
+  };
+
+  // Get provider icon for display
+  const getProviderIcon = () => {
+    if (!message.provider) return '🤖';
+    
+    const iconMap = {
+      'openai': '🤖',
+      'anthropic': '🧠',
+      'deepseek': '🔍',
+      'moonshot': '🌙',
+      'ollama': '🦙'
+    };
+    
+    return iconMap[message.provider.toLowerCase()] || '🤖';
   };
 
   return (
     <div className={`message-container ${message.type}`}>
       <div className="message-header">
         <span className="message-sender">
-          {isUser ? 'You' : getModelName()}
-        </span>
-        <span className="message-time">
-          {message.timestamp.toLocaleTimeString()}
+          {isUser ? 'You' : (
+            <>
+              <span className="provider-icon">{getProviderIcon()}</span>
+              <span className="model-name">{getModelName()}</span>
+            </>
+          )}
         </span>
       </div>
 
@@ -78,6 +95,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, settings 
           )}
         </div>
       )}
+
+      <div className="message-time">
+        {message.timestamp.toLocaleTimeString()}
+      </div>
     </div>
   );
 };

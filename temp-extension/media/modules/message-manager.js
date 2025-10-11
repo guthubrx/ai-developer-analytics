@@ -35,7 +35,7 @@ class MessageManager {
             <div class="message-header">
                 <div class="message-avatar">${type === 'user' ? 'U' : this.getProviderIcon(provider)}</div>
                 <div class="message-content">
-                    ${type === 'ai' && (model || provider) ? `<div class="model-name">${model || this.getModelDisplayName(provider)}</div>` : ''}
+                    ${type === 'ai' ? `<div class="model-name">${model || this.getModelDisplayName(provider)}</div>` : ''}
                     <div class="message-text">${formattedContent}</div>
                 </div>
             </div>
@@ -512,16 +512,8 @@ class MessageManager {
     }
 
     getModelDisplayName(provider) {
-        // Map provider names to model names
-        const modelMap = {
-            'openai': 'GPT-4o',
-            'anthropic': 'Claude 3.5',
-            'deepseek': 'DeepSeek R1',
-            'moonshot': 'Moonshot',
-            'ollama': 'Ollama'
-        };
-
-        return modelMap[provider?.toLowerCase()] || provider || 'AI';
+        // Return the provider name as is, or fallback
+        return provider || 'Assistant IA';
     }
 
     sendMessageToExtension(message) {

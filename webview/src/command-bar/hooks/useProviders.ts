@@ -37,12 +37,7 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
    * Charger les providers depuis VSCode
    */
   const loadProviders = useCallback(async (): Promise<void> => {
-    console.log('========== LOAD PROVIDERS HOOK ==========');
-    console.log('VSCode API available:', !!vscode);
-    console.log('==========================================');
-
     if (!vscode) {
-      console.log('❌ VSCode API not available, using mock data');
       // Mode développement - données mock
       const mockProviders: ProviderInfo[] = [
         {
@@ -135,8 +130,6 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
       const now = Date.now();
 
       if (cached && (now - cached.timestamp) < CACHE_DURATION) {
-        console.log(`📦 Using cached providers`);
-        console.log(`📊 Cached providers count: ${cached.providers.length}`);
         setProviders(cached.providers);
 
         // Sélectionner automatiquement le premier provider avec clé API
@@ -151,13 +144,8 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
         return;
       }
 
-      console.log(`🔍 Fetching providers from VSCode`);
-      console.log(`⏰ Cache expired or not found, fetching from API`);
-
       // Envoyer un message à l'extension pour récupérer les providers
-      console.log(`📤 Sending getProvidersStatus message`);
       vscode.postMessage({ type: 'getProvidersStatus' });
-      console.log(`📨 Message sent`);
 
     } catch (err) {
       console.error('❌ Error requesting providers:', err);
@@ -182,7 +170,6 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
     }
 
     setSelectedProvider(provider);
-    console.log(`✅ Selected provider: ${provider.name}`);
   }, []);
 
   /**
@@ -214,20 +201,8 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const message = event.data;
-      console.log('========== PROVIDERS MESSAGE RECEIVED ==========');
-      console.log('Message type:', message.type);
-      console.log('=================================================');
-
       if (message.type === 'providersStatus') {
         const loadedProviders = message.providers || [];
-        console.log(`✅ Providers loaded: ${loadedProviders.length} providers`);
-
-        if (loadedProviders.length > 0) {
-          console.log('📋 Loaded providers:');
-          loadedProviders.forEach(provider => {
-            console.log(`   - ${provider.name} (${provider.id}) - Enabled: ${provider.enabled}, API Key: ${provider.apiKeyConfigured}`);
-          });
-        }
 
         setProviders(loadedProviders);
 
@@ -236,7 +211,6 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
           providers: loadedProviders,
           timestamp: Date.now()
         });
-        console.log(`💾 Providers cached`);
 
         // Sélectionner automatiquement le premier provider avec clé API
         const firstAvailableProvider = loadedProviders.find(p =>
@@ -244,7 +218,6 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
         );
 
         if (firstAvailableProvider) {
-          console.log(`🎯 Auto-selected provider: ${firstAvailableProvider.name}`);
           setSelectedProvider(firstAvailableProvider);
         }
 
@@ -253,8 +226,6 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
         console.error(`❌ Providers error:`, message.error);
         setError(message.error || 'Failed to load providers');
         setLoading(false);
-      } else {
-        console.log(`ℹ️ Ignoring message type: ${message.type}`);
       }
     };
 
@@ -262,28 +233,22 @@ export const useProviders = (vscode?: VSCodeAPI, mode?: string): UseProvidersRet
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  // Charger les providers au montage
+  // Charger les providers au montage (une seule fois)
   useEffect(() => {
     loadProviders();
-  }, [loadProviders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Réinitialiser l'état de chargement quand on passe en mode manuel
   useEffect(() => {
-    if (mode === 'manual') {
-      console.log('🔄 Mode changed to manual, checking providers state');
-      // Si on n'a pas de providers ou qu'on est bloqué en chargement, forcer le rechargement
-      if (providers.length === 0) {
-        console.log('🔄 No providers loaded, reloading for manual mode');
-        setLoading(true);
-        setError(null);
-        loadProviders();
-      } else if (loading) {
-        console.log('🔄 Providers loading state detected, ensuring completion');
-        // Forcer la fin du chargement si on a déjà des providers
-        setLoading(false);
-      }
+    if (mode === 'manual' && providers.length === 0 && !loading) {
+      // Ne charger que si on n'a pas de providers ET qu'on n'est pas déjà en train de charger
+      setLoading(true);
+      setError(null);
+      loadProviders();
     }
-  }, [mode, providers.length, loading, loadProviders]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
 
   return {
     providers,

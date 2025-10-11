@@ -62,7 +62,8 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
             type: 'ai',
             content: '',
             timestamp: new Date(),
-            provider: message.provider
+            provider: message.provider,
+            model: message.model
           };
           addMessage(currentSession.id, aiMessage);
         }
@@ -83,6 +84,7 @@ export const CommandBarApp: React.FC<CommandBarAppProps> = ({ vscode }) => {
 
       case 'executionCompleted':
         // Update existing AI message with final content and metadata
+        
         if (currentSession && currentAIMessageId) {
           updateMessage(currentSession.id, currentAIMessageId, {
             content: message.response,

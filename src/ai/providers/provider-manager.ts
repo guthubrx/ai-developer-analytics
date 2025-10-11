@@ -38,8 +38,8 @@ export class ProviderManager {
             this.registerConfigurationListener();
             console.log('✅ Provider Manager initialized');
         } catch (error) {
-            console.error('❌ Failed to initialize Provider Manager:', error);
-            throw error;
+            console.warn('⚠️ [PROVIDER-MANAGER] Some initialization steps failed, but continuing:', error);
+            // Continue without throwing to allow other parts of the extension to work
         }
     }
 
@@ -66,29 +66,34 @@ export class ProviderManager {
      * Enregistrer les commandes VSCode
      */
     private registerCommands(): void {
-        // Command to show provider status
-        const showStatusCommand = vscode.commands.registerCommand(
-            'ai-developer-analytics.providers.showStatus',
-            () => this.showProviderStatus()
-        );
+        try {
+            // Command to show provider status
+            const showStatusCommand = vscode.commands.registerCommand(
+                'ai-developer-analytics.providers.showStatus',
+                () => this.showProviderStatus()
+            );
 
-        // Command to export provider configuration
-        const exportCommand = vscode.commands.registerCommand(
-            'ai-developer-analytics.providers.export',
-            () => this.exportProviderConfig()
-        );
+            // Command to export provider configuration
+            const exportCommand = vscode.commands.registerCommand(
+                'ai-developer-analytics.providers.export',
+                () => this.exportProviderConfig()
+            );
 
-        // Command to reset providers
-        const resetCommand = vscode.commands.registerCommand(
-            'ai-developer-analytics.providers.reset',
-            () => this.resetProviders()
-        );
+            // Command to reset providers
+            const resetCommand = vscode.commands.registerCommand(
+                'ai-developer-analytics.providers.reset',
+                () => this.resetProviders()
+            );
 
-        this.context.subscriptions.push(
-            showStatusCommand,
-            exportCommand,
-            resetCommand
-        );
+            this.context.subscriptions.push(
+                showStatusCommand,
+                exportCommand,
+                resetCommand
+            );
+        } catch (error) {
+            console.warn('⚠️ [PROVIDER-MANAGER] Some commands may already be registered:', error);
+            // Continue without registering duplicate commands
+        }
     }
 
     /**

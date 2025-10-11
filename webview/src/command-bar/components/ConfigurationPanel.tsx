@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useModels } from '../hooks/useModels';
 import { useProviders } from '../hooks/useProviders';
 import type { Settings, VSCodeAPI } from '../types';
@@ -27,13 +27,6 @@ export const ConfigurationPanel: React.FC<ConfigurationPanelProps> = ({
   const isManualMode = configuration.mode === 'manual';
   const { models, loading, error } = useModels(vscode, configuration.provider);
   const { providers, loading: providersLoading } = useProviders(vscode, configuration.mode);
-
-  // Charger les modèles quand le provider change
-  useEffect(() => {
-    if (configuration.provider) {
-      console.log(`🔄 Provider changed to: ${configuration.provider}`);
-    }
-  }, [configuration.provider]);
 
   // Helper pour obtenir le statut du provider
   const getProviderStatus = (providerId: string) => {

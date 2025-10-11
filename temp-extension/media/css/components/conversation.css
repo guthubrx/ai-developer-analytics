@@ -46,6 +46,21 @@
   margin-left: calc(28px + var(--space-md)); /* Align with message content */
 }
 
+.message-sender {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.provider-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.model-name {
+  font-weight: 500;
+}
+
 .timestamp {
   text-align: right;
 }

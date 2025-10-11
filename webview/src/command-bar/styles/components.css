@@ -104,23 +104,24 @@
 
 .message-container.user {
   align-self: flex-end;
-  background: linear-gradient(135deg, rgba(139, 69, 19, 0.3) 0%, rgba(101, 67, 33, 0.4) 100%);
+  background-color: rgba(52, 58, 64, 0.85);
   color: var(--vscode-button-foreground);
   padding: 12px 16px;
   border-radius: 12px;
   max-width: 80%;
-  border: 1px solid rgba(139, 69, 19, 0.5);
-  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.2);
+  border: 1px solid rgba(52, 58, 64, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .message-container.ai {
   align-self: flex-start;
-  background: linear-gradient(135deg, rgba(101, 67, 33, 0.2) 0%, rgba(139, 69, 19, 0.25) 100%);
-  padding: 12px 16px;
-  border-radius: 12px;
-  max-width: 80%;
-  border: 1px solid rgba(139, 69, 19, 0.3);
-  box-shadow: 0 2px 6px rgba(139, 69, 19, 0.15);
+  background: transparent;
+  padding: 12px 0;
+  border-radius: 0;
+  max-width: 100%;
+  width: 100%;
+  border: none;
+  box-shadow: none;
 }
 
 .message-container.error {
@@ -139,12 +140,41 @@
   margin-bottom: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: rgba(139, 69, 19, 0.9);
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
+  color: var(--vscode-foreground);
+  text-shadow: none;
+  position: relative;
+  z-index: 10;
+}
+
+.message-sender {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.provider-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.model-name {
+  font-weight: 500;
+  position: relative;
+  z-index: 10;
+  opacity: 1;
+  filter: none;
 }
 
 .message-content {
   line-height: 1.4;
+}
+
+.message-container.ai .message-content {
+  line-height: 1.3;
+}
+
+.message-container.user .message-content {
+  font-size: 0.8em;
 }
 
 .message-metadata {
@@ -153,6 +183,14 @@
   opacity: 0.7;
   display: flex;
   gap: 12px;
+}
+
+.message-time {
+  margin-top: 8px;
+  font-size: 10px;
+  opacity: 0.7;
+  text-align: right;
+  color: rgba(139, 69, 19, 0.6);
 }
 
 .metadata-item {
@@ -439,6 +477,7 @@
   max-height: 120px;
   outline: none;
   font-family: inherit;
+  font-size: 0.12em;
 }
 
 .prompt-input:focus {

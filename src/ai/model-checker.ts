@@ -58,20 +58,12 @@ export class ModelChecker {
      */
     private async checkOpenAIModels(): Promise<ModelInfo[]> {
         const apiKey = await this.getApiKey('openaiApiKey');
-        if (!apiKey) {
-            console.log('No OpenAI API key found, returning default models');
-            return this.getDefaultModels();
+        if (!apiKey) {            return this.getDefaultModels();
         }
 
-        try {
-            console.log('Fetching OpenAI models from API...');
-            const models = await this.fetchOpenAIModels(apiKey);
-            console.log(`Retrieved ${models.length} OpenAI models from API`);
-            return models;
+        try {            const models = await this.fetchOpenAIModels(apiKey);            return models;
         } catch (error) {
-            console.error('Error fetching OpenAI models from API:', error);
-            console.log('Falling back to default models');
-            return this.getDefaultModels();
+            console.error('Error fetching OpenAI models from API:', error);            return this.getDefaultModels();
         }
     }
 
@@ -80,17 +72,10 @@ export class ModelChecker {
      */
     private async fetchOpenAIModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('openai');
-        const config = getProviderConfig('openai');
-
-        console.log('========== OPENAI API REQUEST ==========');
-        console.log('URL:', apiUrl);
-        console.log('Method: GET');
-        console.log('Headers:', {
+        const config = getProviderConfig('openai');        console.log('Headers:', {
             'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
             'Content-Type': 'application/json'
         });
-        console.log('========================================');
-
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -112,9 +97,7 @@ export class ModelChecker {
                 timeout: 30000 // 30 second timeout
             };
 
-            const timeoutId = setTimeout(() => {
-                console.log('========== OPENAI API TIMEOUT ==========');
-                req.destroy();
+            const timeoutId = setTimeout(() => {                req.destroy();
                 reject(new Error('Request timeout - OpenAI models API did not respond'));
             }, 30000);
 
@@ -126,22 +109,9 @@ export class ModelChecker {
                 });
 
                 res.on('end', () => {
-                    clearTimeout(timeoutId);
-                    console.log('========== OPENAI API RESPONSE ==========');
-                    console.log('Status Code:', res.statusCode);
-                    console.log('Headers:', JSON.stringify(res.headers, null, 2));
-                    console.log('Body Length:', data.length, 'characters');
-                    console.log('Body Preview:', data.substring(0, 500));
-                    console.log('=========================================');
-
-                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    clearTimeout(timeoutId);                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         try {
-                            const response = JSON.parse(data);
-                            console.log('Parsed Response Keys:', Object.keys(response));
-                            console.log('Number of models in response:', response.data?.length || 0);
-                            const models = this.parseOpenAIModels(response);
-                            console.log('Filtered models count:', models.length);
-                            resolve(models);
+                            const response = JSON.parse(data);                            const models = this.parseOpenAIModels(response);                            resolve(models);
                         } catch (parseError) {
                             console.error('Failed to parse OpenAI response:', parseError);
                             reject(new Error(`Failed to parse OpenAI models response: ${parseError}`));
@@ -154,12 +124,8 @@ export class ModelChecker {
             });
 
             req.on('error', (error: any) => {
-                clearTimeout(timeoutId);
-                console.log('========== OPENAI API ERROR ==========');
-                console.error('Error type:', error.code);
+                clearTimeout(timeoutId);                console.error('Error type:', error.code);
                 console.error('Error message:', error.message);
-                console.log('======================================');
-
                 if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
                     reject(new Error(`Connection timeout or reset - OpenAI models API may be unavailable: ${error.message}`));
                 } else {
@@ -169,9 +135,7 @@ export class ModelChecker {
 
             req.on('timeout', () => {
                 req.destroy();
-                clearTimeout(timeoutId);
-                console.log('========== OPENAI API TIMEOUT ==========');
-                reject(new Error('Request timeout - OpenAI models API did not respond'));
+                clearTimeout(timeoutId);                reject(new Error('Request timeout - OpenAI models API did not respond'));
             });
 
             req.end();
@@ -224,20 +188,12 @@ export class ModelChecker {
      */
     private async checkAnthropicModels(): Promise<ModelInfo[]> {
         const apiKey = await this.getApiKey('anthropicApiKey');
-        if (!apiKey) {
-            console.log('No Anthropic API key found, returning default models');
-            return this.getDefaultModels();
+        if (!apiKey) {            return this.getDefaultModels();
         }
 
-        try {
-            console.log('Fetching Anthropic models from API...');
-            const models = await this.fetchAnthropicModels(apiKey);
-            console.log(`Retrieved ${models.length} Anthropic models from API`);
-            return models;
+        try {            const models = await this.fetchAnthropicModels(apiKey);            return models;
         } catch (error) {
-            console.error('Error fetching Anthropic models from API:', error);
-            console.log('Falling back to default models');
-            return this.getDefaultModels();
+            console.error('Error fetching Anthropic models from API:', error);            return this.getDefaultModels();
         }
     }
 
@@ -246,18 +202,11 @@ export class ModelChecker {
      */
     private async fetchAnthropicModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('anthropic');
-        const config = getProviderConfig('anthropic');
-
-        console.log('========== ANTHROPIC API REQUEST ==========');
-        console.log('URL:', apiUrl);
-        console.log('Method: GET');
-        console.log('Headers:', {
+        const config = getProviderConfig('anthropic');        console.log('Headers:', {
             'x-api-key': `${apiKey.substring(0, 10)}...`,
             'anthropic-version': '2023-06-01',
             'Content-Type': 'application/json'
         });
-        console.log('===========================================');
-
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -280,9 +229,7 @@ export class ModelChecker {
                 timeout: 30000 // 30 second timeout
             };
 
-            const timeoutId = setTimeout(() => {
-                console.log('========== ANTHROPIC API TIMEOUT ==========');
-                req.destroy();
+            const timeoutId = setTimeout(() => {                req.destroy();
                 reject(new Error('Request timeout - Anthropic models API did not respond'));
             }, 30000);
 
@@ -294,22 +241,9 @@ export class ModelChecker {
                 });
 
                 res.on('end', () => {
-                    clearTimeout(timeoutId);
-                    console.log('========== ANTHROPIC API RESPONSE ==========');
-                    console.log('Status Code:', res.statusCode);
-                    console.log('Headers:', JSON.stringify(res.headers, null, 2));
-                    console.log('Body Length:', data.length, 'characters');
-                    console.log('Body Preview:', data.substring(0, 500));
-                    console.log('============================================');
-
-                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    clearTimeout(timeoutId);                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         try {
-                            const response = JSON.parse(data);
-                            console.log('Parsed Response Keys:', Object.keys(response));
-                            console.log('Number of models in response:', response.models?.length || 0);
-                            const models = this.parseAnthropicModels(response);
-                            console.log('Filtered models count:', models.length);
-                            resolve(models);
+                            const response = JSON.parse(data);                            const models = this.parseAnthropicModels(response);                            resolve(models);
                         } catch (parseError) {
                             console.error('Failed to parse Anthropic response:', parseError);
                             reject(new Error(`Failed to parse Anthropic models response: ${parseError}`));
@@ -322,12 +256,8 @@ export class ModelChecker {
             });
 
             req.on('error', (error: any) => {
-                clearTimeout(timeoutId);
-                console.log('========== ANTHROPIC API ERROR ==========');
-                console.error('Error type:', error.code);
+                clearTimeout(timeoutId);                console.error('Error type:', error.code);
                 console.error('Error message:', error.message);
-                console.log('=========================================');
-
                 if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
                     reject(new Error(`Connection timeout or reset - Anthropic models API may be unavailable: ${error.message}`));
                 } else {
@@ -337,9 +267,7 @@ export class ModelChecker {
 
             req.on('timeout', () => {
                 req.destroy();
-                clearTimeout(timeoutId);
-                console.log('========== ANTHROPIC API TIMEOUT ==========');
-                reject(new Error('Request timeout - Anthropic models API did not respond'));
+                clearTimeout(timeoutId);                reject(new Error('Request timeout - Anthropic models API did not respond'));
             });
 
             req.end();
@@ -392,28 +320,14 @@ export class ModelChecker {
     private async checkDeepSeekModels(): Promise<ModelInfo[]> {
         const apiKey = await this.getApiKey('deepseekApiKey');
         if (!apiKey) {
-            console.log('❌ No DeepSeek API key found, returning default models');
-            console.log('💡 Please configure DeepSeek API key in VSCode settings');
             return this.getDefaultModels();
         }
 
         try {
-            console.log('🔍 Fetching DeepSeek models from API...');
-            console.log(`🔑 API Key configured: ${apiKey.substring(0, 8)}...`);
             const models = await this.fetchDeepSeekModels(apiKey);
-            console.log(`✅ Retrieved ${models.length} DeepSeek models from API`);
-
-            if (models.length > 0) {
-                console.log('📋 Models found:');
-                models.forEach(model => {
-                    console.log(`   - ${model.name} (${model.id})`);
-                });
-            }
-
             return models;
         } catch (error) {
             console.error('❌ Error fetching DeepSeek models from API:', error);
-            console.log('🔄 Falling back to default models');
             return this.getDefaultModels();
         }
     }
@@ -423,17 +337,10 @@ export class ModelChecker {
      */
     private async fetchDeepSeekModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('deepseek');
-        const config = getProviderConfig('deepseek');
-
-        console.log('========== DEEPSEEK API REQUEST ==========');
-        console.log('URL:', apiUrl);
-        console.log('Method: GET');
-        console.log('Headers:', {
+        const config = getProviderConfig('deepseek');        console.log('Headers:', {
             'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
             'Content-Type': 'application/json'
         });
-        console.log('==========================================');
-
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -455,9 +362,7 @@ export class ModelChecker {
                 timeout: 30000 // 30 second timeout
             };
 
-            const timeoutId = setTimeout(() => {
-                console.log('========== DEEPSEEK API TIMEOUT ==========');
-                req.destroy();
+            const timeoutId = setTimeout(() => {                req.destroy();
                 reject(new Error('Request timeout - DeepSeek models API did not respond'));
             }, 30000);
 
@@ -469,22 +374,9 @@ export class ModelChecker {
                 });
 
                 res.on('end', () => {
-                    clearTimeout(timeoutId);
-                    console.log('========== DEEPSEEK API RESPONSE ==========');
-                    console.log('Status Code:', res.statusCode);
-                    console.log('Headers:', JSON.stringify(res.headers, null, 2));
-                    console.log('Body Length:', data.length, 'characters');
-                    console.log('Body Preview:', data.substring(0, 500));
-                    console.log('===========================================');
-
-                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    clearTimeout(timeoutId);                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         try {
-                            const response = JSON.parse(data);
-                            console.log('Parsed Response Keys:', Object.keys(response));
-                            console.log('Number of models in response:', response.data?.length || 0);
-                            const models = this.parseDeepSeekModels(response);
-                            console.log('Filtered models count:', models.length);
-                            resolve(models);
+                            const response = JSON.parse(data);                            const models = this.parseDeepSeekModels(response);                            resolve(models);
                         } catch (parseError) {
                             console.error('Failed to parse DeepSeek response:', parseError);
                             reject(new Error(`Failed to parse DeepSeek models response: ${parseError}`));
@@ -497,12 +389,8 @@ export class ModelChecker {
             });
 
             req.on('error', (error: any) => {
-                clearTimeout(timeoutId);
-                console.log('========== DEEPSEEK API ERROR ==========');
-                console.error('Error type:', error.code);
+                clearTimeout(timeoutId);                console.error('Error type:', error.code);
                 console.error('Error message:', error.message);
-                console.log('========================================');
-
                 if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
                     reject(new Error(`Connection timeout or reset - DeepSeek models API may be unavailable: ${error.message}`));
                 } else {
@@ -512,9 +400,7 @@ export class ModelChecker {
 
             req.on('timeout', () => {
                 req.destroy();
-                clearTimeout(timeoutId);
-                console.log('========== DEEPSEEK API TIMEOUT ==========');
-                reject(new Error('Request timeout - DeepSeek models API did not respond'));
+                clearTimeout(timeoutId);                reject(new Error('Request timeout - DeepSeek models API did not respond'));
             });
 
             req.end();
@@ -567,20 +453,12 @@ export class ModelChecker {
      */
     private async checkMoonshotModels(): Promise<ModelInfo[]> {
         const apiKey = await this.getApiKey('moonshotApiKey');
-        if (!apiKey) {
-            console.log('No Moonshot API key found, returning default models');
-            return this.getDefaultModels();
+        if (!apiKey) {            return this.getDefaultModels();
         }
 
-        try {
-            console.log('Fetching Moonshot models from API...');
-            const models = await this.fetchMoonshotModels(apiKey);
-            console.log(`Retrieved ${models.length} Moonshot models from API`);
-            return models;
+        try {            const models = await this.fetchMoonshotModels(apiKey);            return models;
         } catch (error) {
-            console.error('Error fetching Moonshot models from API:', error);
-            console.log('Falling back to default models');
-            return this.getDefaultModels();
+            console.error('Error fetching Moonshot models from API:', error);            return this.getDefaultModels();
         }
     }
 
@@ -589,17 +467,10 @@ export class ModelChecker {
      */
     private async fetchMoonshotModels(apiKey: string): Promise<ModelInfo[]> {
         const apiUrl = getModelsUrl('moonshot');
-        const config = getProviderConfig('moonshot');
-
-        console.log('========== MOONSHOT API REQUEST ==========');
-        console.log('URL:', apiUrl);
-        console.log('Method: GET');
-        console.log('Headers:', {
+        const config = getProviderConfig('moonshot');        console.log('Headers:', {
             'Authorization': `Bearer ${apiKey.substring(0, 10)}...`,
             'Content-Type': 'application/json'
         });
-        console.log('==========================================');
-
         return new Promise((resolve, reject) => {
             const https = require('https');
             const urlObj = new URL(apiUrl);
@@ -621,9 +492,7 @@ export class ModelChecker {
                 timeout: 30000 // 30 second timeout
             };
 
-            const timeoutId = setTimeout(() => {
-                console.log('========== MOONSHOT API TIMEOUT ==========');
-                req.destroy();
+            const timeoutId = setTimeout(() => {                req.destroy();
                 reject(new Error('Request timeout - Moonshot models API did not respond'));
             }, 30000);
 
@@ -635,22 +504,9 @@ export class ModelChecker {
                 });
 
                 res.on('end', () => {
-                    clearTimeout(timeoutId);
-                    console.log('========== MOONSHOT API RESPONSE ==========');
-                    console.log('Status Code:', res.statusCode);
-                    console.log('Headers:', JSON.stringify(res.headers, null, 2));
-                    console.log('Body Length:', data.length, 'characters');
-                    console.log('Body Preview:', data.substring(0, 500));
-                    console.log('===========================================');
-
-                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                    clearTimeout(timeoutId);                    if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
                         try {
-                            const response = JSON.parse(data);
-                            console.log('Parsed Response Keys:', Object.keys(response));
-                            console.log('Number of models in response:', response.data?.length || 0);
-                            const models = this.parseMoonshotModels(response);
-                            console.log('Filtered models count:', models.length);
-                            resolve(models);
+                            const response = JSON.parse(data);                            const models = this.parseMoonshotModels(response);                            resolve(models);
                         } catch (parseError) {
                             console.error('Failed to parse Moonshot response:', parseError);
                             reject(new Error(`Failed to parse Moonshot models response: ${parseError}`));
@@ -663,12 +519,8 @@ export class ModelChecker {
             });
 
             req.on('error', (error: any) => {
-                clearTimeout(timeoutId);
-                console.log('========== MOONSHOT API ERROR ==========');
-                console.error('Error type:', error.code);
+                clearTimeout(timeoutId);                console.error('Error type:', error.code);
                 console.error('Error message:', error.message);
-                console.log('========================================');
-
                 if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
                     reject(new Error(`Connection timeout or reset - Moonshot models API may be unavailable: ${error.message}`));
                 } else {
@@ -678,9 +530,7 @@ export class ModelChecker {
 
             req.on('timeout', () => {
                 req.destroy();
-                clearTimeout(timeoutId);
-                console.log('========== MOONSHOT API TIMEOUT ==========');
-                reject(new Error('Request timeout - Moonshot models API did not respond'));
+                clearTimeout(timeoutId);                reject(new Error('Request timeout - Moonshot models API did not respond'));
             });
 
             req.end();

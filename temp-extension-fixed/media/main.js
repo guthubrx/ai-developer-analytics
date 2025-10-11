@@ -224,7 +224,7 @@ import APIModelChecker from './modules/api-model-checker.js';
                 messageManager.stopStreamingResponse();
 
                 // Add final AI response to conversation with provider and model
-                const modelName = message.model || message.provider;
+                const modelName = message.model;
                 messageManager.addAIMessage(message.response, message.provider, modelName);
 
                 // Update metrics

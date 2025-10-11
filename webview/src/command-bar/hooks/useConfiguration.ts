@@ -6,7 +6,7 @@
  * @license AGPL-3.0-only
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Settings } from '../types';
 
 interface Configuration {
@@ -30,54 +30,48 @@ export const useConfiguration = (settings: Settings): UseConfigurationReturn => 
   // Clé de stockage local
   const STORAGE_KEY = 'ai-analytics-last-configuration';
 
-  // Configuration par défaut basée sur les settings
-  const defaultConfiguration: Configuration = {
+  // Configuration par défaut basée sur les settings (mémorisée pour éviter les re-créations)
+  const defaultConfiguration: Configuration = useMemo(() => ({
     mode: settings.defaultMode || 'auto',
     provider: settings.defaultEngine || 'deepseek',
     model: '',
     task: settings.defaultTaskType || 'general',
     routingMode: settings.routingMode || 'normal',
-  };
+  }), [settings.defaultMode, settings.defaultEngine, settings.defaultTaskType, settings.routingMode]);
 
-  const [configuration, setConfiguration] = useState<Configuration>(defaultConfiguration);
-
-  /**
-   * Charger la configuration sauvegardée
-   */
-  const loadSavedConfiguration = useCallback((): Configuration => {
+  const [configuration, setConfiguration] = useState<Configuration>(() => {
+    // Initialiser directement avec la config sauvegardée si disponible
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        console.log('📂 Configuration chargée depuis le stockage local:', parsed);
         return { ...defaultConfiguration, ...parsed };
       }
     } catch (error) {
       console.warn('⚠️ Erreur lors du chargement de la configuration:', error);
     }
     return defaultConfiguration;
-  }, [defaultConfiguration]);
+  });
 
   /**
-   * Sauvegarder la configuration
+   * Sauvegarder la configuration (fonction stable)
    */
   const saveConfiguration = useCallback(() => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(configuration));
-      console.log('💾 Configuration sauvegardée:', configuration);
     } catch (error) {
       console.warn('⚠️ Erreur lors de la sauvegarde de la configuration:', error);
     }
   }, [configuration]);
 
   /**
-   * Mettre à jour la configuration
+   * Mettre à jour la configuration avec sauvegarde automatique
    */
   const updateConfiguration = useCallback((newConfig: Partial<Configuration>) => {
     setConfiguration(prev => {
       const updated = { ...prev, ...newConfig };
-
-      // Sauvegarder automatiquement après chaque changement
+      
+      // Sauvegarder après un court délai (debounce)
       setTimeout(() => {
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -89,22 +83,6 @@ export const useConfiguration = (settings: Settings): UseConfigurationReturn => 
       return updated;
     });
   }, []);
-
-  // Charger la configuration sauvegardée au montage
-  useEffect(() => {
-    const savedConfig = loadSavedConfiguration();
-    setConfiguration(savedConfig);
-    console.log('🎯 Configuration initiale restaurée:', savedConfig);
-  }, [loadSavedConfiguration]);
-
-  // Sauvegarder automatiquement quand la configuration change
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveConfiguration();
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [configuration, saveConfiguration]);
 
   return {
     configuration,

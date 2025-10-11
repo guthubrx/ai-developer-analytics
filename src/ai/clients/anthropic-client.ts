@@ -236,10 +236,13 @@ export class AnthropicClient extends BaseAIClient {
                     throw new Error('Empty response from Anthropic API');
                 }
 
+                console.log('[Anthropic] API response model field:', response.model);
+                console.log('[Anthropic] Full API response:', JSON.stringify(response, null, 2));
+                
                 return {
                     content,
                     usage: response.usage,
-                    model: response.model
+                    model: response.model || configuredModel
                 };
             }
 
